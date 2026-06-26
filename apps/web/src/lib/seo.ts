@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { DEFAULT_LOCALE, translate } from '@/lib/i18n';
+import { getSiteUrl } from '@/lib/env';
 
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+export const SITE_URL = getSiteUrl();
 
 export type SeoPageKey =
   | 'login'

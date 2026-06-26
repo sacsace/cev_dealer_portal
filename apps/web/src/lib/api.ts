@@ -1,4 +1,6 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+import { getApiUrl } from '@/lib/env';
+
+const API_URL = getApiUrl();
 
 export interface ApiUser {
   id: string;
@@ -131,7 +133,7 @@ export async function apiUpload<T>(
 }
 
 export function resolveFileUrl(fileUrl: string): string {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+  const apiUrl = getApiUrl();
   const origin = apiUrl.replace(/\/api\/?$/, '');
   return `${origin}/api${fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`}`;
 }
