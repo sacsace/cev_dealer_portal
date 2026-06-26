@@ -11,7 +11,7 @@ NPM_CONFIG_INCLUDE = "optional"
 
 [phases.build]
 cmds = [
-  "node apps/web/scripts/ensure-native-css-bindings.cjs",
+  "node scripts/ensure-native-css-bindings.cjs",
   "npm run build --workspace=web",
 ]
 

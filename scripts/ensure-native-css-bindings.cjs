@@ -4,8 +4,8 @@ const { execSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const webRoot = path.join(__dirname, '..');
-const repoRoot = path.join(webRoot, '..', '..');
+const repoRoot = path.join(__dirname, '..');
+const webRoot = path.join(repoRoot, 'apps', 'web');
 const logPrefix = '[native-css]';
 
 function platformTriple() {

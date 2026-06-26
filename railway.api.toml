@@ -13,7 +13,7 @@ nixPkgs = ["nodejs_22"]
 [build.nixpacksPlan.phases.install]
 dependsOn = ["setup"]
 cmds = [
-  "npm ci --include=dev --include-workspace-root",
+  "npm ci --include=dev --include-workspace-root --ignore-scripts",
 ]
 
 [build.nixpacksPlan.phases.build]

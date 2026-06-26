@@ -6,6 +6,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NPM_CONFIG_INCLUDE=optional
 
 COPY package.json package-lock.json .npmrc ./
+COPY scripts/ensure-native-css-bindings.cjs scripts/
 COPY apps/web/package.json apps/web/
 COPY apps/api/package.json apps/api/
 
@@ -13,7 +14,7 @@ RUN npm ci --include=dev --include=optional --include-workspace-root --ignore-sc
 
 COPY apps/web apps/web
 
-RUN node apps/web/scripts/ensure-native-css-bindings.cjs \
+RUN node scripts/ensure-native-css-bindings.cjs \
   && npm run build --workspace=web
 
 EXPOSE 3000

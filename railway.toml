@@ -16,7 +16,7 @@ cmds = [
 [build.nixpacksPlan.phases.build]
 dependsOn = ["install"]
 cmds = [
-  "node apps/web/scripts/ensure-native-css-bindings.cjs",
+  "node scripts/ensure-native-css-bindings.cjs",
   "npm run build --workspace=web",
 ]
 
