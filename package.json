@@ -6,12 +6,15 @@
     "apps/*"
   ],
   "scripts": {
+    "postinstall": "node apps/web/scripts/ensure-native-css-bindings.cjs",
     "predev": "powershell -ExecutionPolicy Bypass -File scripts/kill-ports.ps1",
     "dev:web": "npm run dev --workspace=apps/web",
     "dev:api": "npm run start:dev --workspace=apps/api",
     "dev": "concurrently -k \"npm run dev:api\" \"npm run dev:web\"",
     "kill-ports": "powershell -ExecutionPolicy Bypass -File scripts/kill-ports.ps1",
     "build": "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
+    "build:railway:api": "npm run db:generate && npm run build --workspace=api",
+    "start:railway:api": "npm run db:migrate:deploy && npm run start:prod --workspace=api",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",

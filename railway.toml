@@ -16,12 +16,14 @@ cmds = [
 [build.nixpacksPlan.phases.build]
 dependsOn = ["install"]
 cmds = [
+  "node apps/web/scripts/ensure-native-css-bindings.cjs",
   "npm run build --workspace=web",
 ]
 
 [deploy]
 startCommand = "npm run start --workspace=web"
+# Set in Railway UI if using Docker: builder = "DOCKERFILE", dockerfilePath = "Dockerfile.web"
 
 [variables]
-NPM_CONFIG_PRODUCTION = "false"
+NPM_CONFIG_OMIT = ""
 NPM_CONFIG_INCLUDE = "optional"

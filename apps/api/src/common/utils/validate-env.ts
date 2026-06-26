@@ -5,8 +5,22 @@ const WEAK_JWT_SECRETS = new Set([
   'jwt-secret',
 ]);
 
+function isLocalhostUrl(value: string): boolean {
+  return /localhost|127\.0\.0\.1/i.test(value);
+}
+
 export function validateEnv(): void {
   if (process.env.NODE_ENV !== 'production') return;
+
+  const databaseUrl = process.env.DATABASE_URL ?? '';
+  if (!databaseUrl || isLocalhostUrl(databaseUrl)) {
+    throw new Error('DATABASE_URL must point to the production Postgres instance');
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL ?? '';
+  if (!frontendUrl || isLocalhostUrl(frontendUrl)) {
+    throw new Error('FRONTEND_URL must be set to the public web URL in production');
+  }
 
   const jwtSecret = process.env.JWT_SECRET ?? '';
   const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET ?? '';

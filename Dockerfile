@@ -3,7 +3,7 @@ FROM node:22-bookworm-slim AS base
 WORKDIR /app
 
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV NPM_CONFIG_PRODUCTION=false
+ENV NPM_CONFIG_OMIT=
 ENV NPM_CONFIG_INCLUDE=optional
 
 COPY package.json package-lock.json .npmrc ./
@@ -14,7 +14,8 @@ RUN npm ci --include=dev --include=optional --include-workspace-root
 
 COPY apps/web apps/web
 
-RUN npm run build --workspace=web
+RUN node apps/web/scripts/ensure-native-css-bindings.cjs \
+  && npm run build --workspace=web
 
 EXPOSE 3000
 WORKDIR /app/apps/web
