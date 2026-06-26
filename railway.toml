@@ -10,7 +10,7 @@ nixPkgs = ["nodejs_22"]
 [build.nixpacksPlan.phases.install]
 dependsOn = ["setup"]
 cmds = [
-  "npm ci --include=dev --include=optional --include-workspace-root",
+  "npm ci --include=dev --include=optional --include-workspace-root --ignore-scripts",
 ]
 
 [build.nixpacksPlan.phases.build]
@@ -25,5 +25,4 @@ startCommand = "npm run start --workspace=web"
 # Set in Railway UI if using Docker: builder = "DOCKERFILE", dockerfilePath = "Dockerfile.web"
 
 [variables]
-NPM_CONFIG_OMIT = ""
 NPM_CONFIG_INCLUDE = "optional"

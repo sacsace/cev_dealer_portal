@@ -3,11 +3,10 @@ nixPkgs = ["nodejs_22"]
 
 [phases.install]
 cmds = [
-  "npm ci --include=dev --include=optional --include-workspace-root"
+  "npm ci --include=dev --include=optional --include-workspace-root --ignore-scripts"
 ]
 
 [variables]
-NPM_CONFIG_OMIT = ""
 NPM_CONFIG_INCLUDE = "optional"
 
 [phases.build]

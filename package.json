@@ -6,7 +6,6 @@
     "apps/*"
   ],
   "scripts": {
-    "postinstall": "node apps/web/scripts/ensure-native-css-bindings.cjs",
     "predev": "powershell -ExecutionPolicy Bypass -File scripts/kill-ports.ps1",
     "dev:web": "npm run dev --workspace=apps/web",
     "dev:api": "npm run start:dev --workspace=apps/api",

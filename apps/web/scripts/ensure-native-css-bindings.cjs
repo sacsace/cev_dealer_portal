@@ -67,7 +67,6 @@ function installNative(moduleName, version) {
       stdio: 'inherit',
       env: {
         ...process.env,
-        npm_config_omit: '',
         npm_config_include: 'optional',
       },
     },

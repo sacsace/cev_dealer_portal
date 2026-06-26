@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "postinstall": "node scripts/ensure-native-css-bindings.cjs",
     "prebuild": "node scripts/ensure-native-css-bindings.cjs",
     "build": "next build",
     "start": "next start",
