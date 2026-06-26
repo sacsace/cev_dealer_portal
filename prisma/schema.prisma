@@ -1,0 +1,561 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ROOT
+  ADMIN
+  USER
+  DEALER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum DealerStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum PartStatus {
+  AVAILABLE
+  OUT_OF_STOCK
+  DISCONTINUED
+  COMING_SOON
+}
+
+enum OrderStatus {
+  CREATED
+  SUBMITTED
+  APPROVED
+  PACKED
+  ORDER_SHIPPED
+  DELIVERED
+  CANCELLED
+  REJECTED
+}
+
+enum JobCardStatus {
+  CREATED
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  CLOSED
+}
+
+enum WarrantyClaimStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  PAID
+  CLOSED
+}
+
+enum PermissionAction {
+  VIEW
+  CREATE
+  EDIT
+  DELETE
+  APPROVE
+  REJECT
+  EXPORT
+}
+
+enum PermissionModule {
+  DEALER
+  PARTS
+  ORDERS
+  JOB_CARDS
+  WARRANTY_CLAIMS
+  REPORTS
+  SETTINGS
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  EXPORT
+  PASSWORD_CHANGE
+  PERMISSION_CHANGE
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String
+  email         String     @unique
+  loginId       String?    @unique @map("login_id")
+  mobile        String?
+  passwordHash  String     @map("password_hash")
+  role          UserRole   @default(USER)
+  status        UserStatus @default(ACTIVE)
+  dealerId      String?    @map("dealer_id")
+  lastLoginAt   DateTime?  @map("last_login_at")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  dealer              Dealer?              @relation(fields: [dealerId], references: [id])
+  dealerContacts      Dealer[]             @relation("DealerContact")
+  permissions         UserPermission[]
+  auditLogs           AuditLog[]
+  jobCardsCreated     JobCard[]            @relation("JobCardCreatedBy")
+  warrantyClaimsCreated WarrantyClaim[]    @relation("WarrantyClaimCreatedBy")
+  ordersCreated       Order[]              @relation("OrderCreatedBy")
+  carts               Cart[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id        String           @id @default(cuid())
+  module    PermissionModule
+  action    PermissionAction
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  @@unique([module, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String @id @default(cuid())
+  roleId       String @map("role_id")
+  permissionId String @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserPermission {
+  id           String @id @default(cuid())
+  userId       String @map("user_id")
+  permissionId String @map("permission_id")
+  granted      Boolean @default(true)
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId])
+  @@map("user_permissions")
+}
+
+model Dealer {
+  id            String       @id @default(cuid())
+  dealerName    String       @map("dealer_name")
+  dealerCode    String       @unique @map("dealer_code")
+  email         String       @unique
+  mobile        String?
+  address       String?
+  city          String?
+  state         String?
+  gstNumber     String?      @map("gst_number")
+  contactPerson String?      @map("contact_person")
+  contactUserId String?      @map("contact_user_id")
+  loginId       String?      @unique @map("login_id")
+  status        DealerStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  contactUser    User?            @relation("DealerContact", fields: [contactUserId], references: [id])
+  users          User[]
+  orders         Order[]
+  jobCards       JobCard[]
+  warrantyClaims WarrantyClaim[]
+  carts          Cart[]
+
+  @@map("dealers")
+}
+
+model VehicleModel {
+  id         String   @id @default(cuid())
+  modelName  String   @map("model_name")
+  modelCode  String   @unique @map("model_code")
+  year       String?
+  status     String   @default("ACTIVE")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  partMappings PartModelMapping[]
+  jobCards     JobCard[]
+
+  @@map("vehicle_models")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  parts Part[]
+
+  @@map("categories")
+}
+
+model ProblemType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  nameEn    String?  @map("name_en")
+  sortOrder Int      @default(0) @map("sort_order")
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("problem_types")
+}
+
+model JobCardType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  nameEn    String?  @map("name_en")
+  sortOrder Int      @default(0) @map("sort_order")
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("job_card_types")
+}
+
+model Fitment {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  nameEn    String?  @map("name_en")
+  sortOrder Int      @default(0) @map("sort_order")
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("fitments")
+}
+
+model Part {
+  id                  String     @id @default(cuid())
+  partNumber          String     @unique @map("part_number")
+  partName            String     @map("part_name")
+  categoryId          String     @map("category_id")
+  description         String?
+  imageUrl            String?    @map("image_url")
+  mrp                 Decimal    @db.Decimal(12, 2)
+  dealerPrice         Decimal    @map("dealer_price") @db.Decimal(12, 2)
+  gstRate             Decimal    @default(18) @map("gst_rate") @db.Decimal(5, 2)
+  stockQuantity       Int        @default(0) @map("stock_quantity")
+  minimumOrderQty     Int        @default(1) @map("minimum_order_qty")
+  warrantyAvailable   Boolean    @default(false) @map("warranty_available")
+  status              PartStatus @default(AVAILABLE)
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+
+  category     Category           @relation(fields: [categoryId], references: [id])
+  images       PartImage[]
+  modelMappings PartModelMapping[]
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+
+  @@map("parts")
+}
+
+model PartImage {
+  id        String   @id @default(cuid())
+  partId    String   @map("part_id")
+  url       String
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  part Part @relation(fields: [partId], references: [id], onDelete: Cascade)
+
+  @@map("part_images")
+}
+
+model PartModelMapping {
+  id        String @id @default(cuid())
+  partId    String @map("part_id")
+  modelId   String @map("model_id")
+
+  part  Part         @relation(fields: [partId], references: [id], onDelete: Cascade)
+  model VehicleModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@unique([partId, modelId])
+  @@map("part_model_mapping")
+}
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  dealerId  String   @map("dealer_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dealer Dealer     @relation(fields: [dealerId], references: [id])
+  items  CartItem[]
+
+  @@unique([userId, dealerId])
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String   @map("cart_id")
+  partId    String   @map("part_id")
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  part Part @relation(fields: [partId], references: [id])
+
+  @@unique([cartId, partId])
+  @@map("cart_items")
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNo         String      @unique @map("order_no")
+  dealerId        String      @map("dealer_id")
+  createdById     String      @map("created_by_id")
+  status          OrderStatus @default(CREATED)
+  billingAddress  String?     @map("billing_address")
+  shippingAddress String?     @map("shipping_address")
+  contactPerson   String?     @map("contact_person")
+  mobile          String?
+  email           String?
+  subtotal        Decimal     @default(0) @db.Decimal(12, 2)
+  gstAmount       Decimal     @default(0) @map("gst_amount") @db.Decimal(12, 2)
+  freightCharge   Decimal     @default(0) @map("freight_charge") @db.Decimal(12, 2)
+  grandTotal      Decimal     @default(0) @map("grand_total") @db.Decimal(12, 2)
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  dealer    Dealer     @relation(fields: [dealerId], references: [id])
+  createdBy User       @relation("OrderCreatedBy", fields: [createdById], references: [id])
+  items     OrderItem[]
+  shipment  Shipment?
+  invoice   Invoice?
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  orderId    String  @map("order_id")
+  partId     String  @map("part_id")
+  partNumber String  @map("part_number")
+  partName   String  @map("part_name")
+  quantity   Int
+  unitPrice  Decimal @map("unit_price") @db.Decimal(12, 2)
+  gstRate    Decimal @map("gst_rate") @db.Decimal(5, 2)
+  gstAmount  Decimal @map("gst_amount") @db.Decimal(12, 2)
+  totalAmount Decimal @map("total_amount") @db.Decimal(12, 2)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  part  Part  @relation(fields: [partId], references: [id])
+
+  @@map("order_items")
+}
+
+model Shipment {
+  id             String    @id @default(cuid())
+  orderId        String    @unique @map("order_id")
+  courierName    String?   @map("courier_name")
+  trackingNo     String?   @map("tracking_no")
+  dispatchDate   DateTime? @map("dispatch_date")
+  deliveryDate   DateTime? @map("delivery_date")
+  deliveryStatus String?   @map("delivery_status")
+  deliveryProof  String?   @map("delivery_proof")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("shipments")
+}
+
+model Invoice {
+  id            String   @id @default(cuid())
+  orderId       String   @unique @map("order_id")
+  invoiceNo     String   @unique @map("invoice_no")
+  invoiceUrl    String?  @map("invoice_url")
+  invoiceAmount Decimal  @map("invoice_amount") @db.Decimal(12, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("invoices")
+}
+
+model JobCard {
+  id                 String        @id @default(cuid())
+  jobCardNo          String        @unique @map("job_card_no")
+  jobCardDate        DateTime      @map("job_card_date")
+  vin                String
+  carModelId         String?       @map("car_model_id")
+  carModelName       String?       @map("car_model_name")
+  fitment            String?
+  gdmsNo             String?       @map("gdms_no")
+  type               String?
+  kilometers         Int?
+  customerName       String        @map("customer_name")
+  mobile             String
+  dealerId           String        @map("dealer_id")
+  dealerName         String        @map("dealer_name")
+  dealerCode         String        @map("dealer_code")
+  place              String?
+  checkedBy          String?       @map("checked_by")
+  typeOfProblem      String?       @map("type_of_problem")
+  jobType            String?       @map("job_type")
+  registrationNumber String?       @map("registration_number")
+  dateOfFitment      DateTime?     @map("date_of_fitment")
+  customerAddress    String?       @map("customer_address")
+  customerComplaint  String?       @map("customer_complaint")
+  notes              String?
+  observation        String?
+  rectification      String?
+  status             JobCardStatus @default(CREATED)
+  createdById        String        @map("created_by_id")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  dealer         Dealer          @relation(fields: [dealerId], references: [id])
+  carModel       VehicleModel?   @relation(fields: [carModelId], references: [id])
+  createdBy      User            @relation("JobCardCreatedBy", fields: [createdById], references: [id])
+  files          JobCardFile[]
+  warrantyClaims WarrantyClaim[]
+
+  @@map("job_cards")
+}
+
+model JobCardFile {
+  id         String   @id @default(cuid())
+  jobCardId  String   @map("job_card_id")
+  fileName   String   @map("file_name")
+  fileUrl    String   @map("file_url")
+  fileType   String   @map("file_type")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  jobCard JobCard @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+
+  @@map("job_card_files")
+}
+
+model WarrantyClaim {
+  id                 String              @id @default(cuid())
+  warrantyClaimNo    String              @unique @map("warranty_claim_no")
+  warrantyClaimDate  DateTime            @map("warranty_claim_date")
+  invoiceNo          String              @map("invoice_no")
+  jobCardId          String?             @map("job_card_id")
+  jobCardNo          String?             @map("job_card_no")
+  vin                String?
+  carModelName       String?             @map("car_model_name")
+  partNumber         String?             @map("part_number")
+  partName           String?             @map("part_name")
+  quantity           Int?
+  claimAmount        Decimal?            @map("claim_amount") @db.Decimal(12, 2)
+  reasonForClaim     String?             @map("reason_for_claim")
+  problemDescription String?             @map("problem_description")
+  dealerId           String              @map("dealer_id")
+  dealerName         String              @map("dealer_name")
+  dealerCode         String              @map("dealer_code")
+  place              String?
+  status             WarrantyClaimStatus @default(DRAFT)
+  rejectReason       String?             @map("reject_reason")
+  remark             String?
+  createdById        String              @map("created_by_id")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  dealer    Dealer               @relation(fields: [dealerId], references: [id])
+  jobCard   JobCard?             @relation(fields: [jobCardId], references: [id])
+  createdBy User                 @relation("WarrantyClaimCreatedBy", fields: [createdById], references: [id])
+  files     WarrantyClaimFile[]
+
+  @@map("warranty_claims")
+}
+
+model WarrantyClaimFile {
+  id              String   @id @default(cuid())
+  warrantyClaimId String   @map("warranty_claim_id")
+  fileName        String   @map("file_name")
+  fileUrl         String   @map("file_url")
+  fileType        String   @map("file_type")
+  documentType    String?  @map("document_type")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  warrantyClaim WarrantyClaim @relation(fields: [warrantyClaimId], references: [id], onDelete: Cascade)
+
+  @@map("warranty_claim_files")
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  userId     String?     @map("user_id")
+  userRole   String?     @map("user_role")
+  action     AuditAction
+  module     String
+  targetId   String?     @map("target_id")
+  beforeData Json?       @map("before_data")
+  afterData  Json?       @map("after_data")
+  ipAddress  String?     @map("ip_address")
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  title     String
+  message   String
+  module    String?
+  targetId  String?  @map("target_id")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("notifications")
+}

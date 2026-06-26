@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cev-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cev
+      POSTGRES_PASSWORD: cev_password
+      POSTGRES_DB: cev_dealer_portal
+    ports:
+      - "5432:5432"
+    volumes:
+      - cev_pg_data:/var/lib/postgresql/data
+
+volumes:
+  cev_pg_data:
