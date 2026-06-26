@@ -1,9 +1,16 @@
-# Production build for the Next.js web app (Linux)
+# Production build for the Next.js web app (Linux / Railway)
 FROM node:22-bookworm-slim AS base
 WORKDIR /app
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NPM_CONFIG_INCLUDE=optional
+ENV HOSTNAME=0.0.0.0
+
+# Railway injects service variables at build time when declared as ARG.
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 
 COPY package.json package-lock.json .npmrc ./
 COPY scripts/ensure-native-css-bindings.cjs scripts/
@@ -22,5 +29,5 @@ RUN env -u NPM_CONFIG_OMIT -u npm_config_omit -u NPM_CONFIG_PRODUCTION -u npm_co
   && npm run build --workspace=web
 
 EXPOSE 3000
-WORKDIR /app/apps/web
-CMD ["npm", "run", "start"]
+
+CMD ["npm", "run", "start", "--workspace=web"]

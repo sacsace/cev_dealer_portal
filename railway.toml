@@ -1,9 +1,0 @@
-[build]
-builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile.web"
-
-[deploy]
-startCommand = "npm run start --workspace=web"
-
-[variables]
-NPM_CONFIG_INCLUDE = "optional"

@@ -5,6 +5,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NPM_CONFIG_INCLUDE=optional
+ENV HOST=0.0.0.0
 
 COPY package.json package-lock.json .npmrc ./
 COPY apps/api/package.json apps/api/

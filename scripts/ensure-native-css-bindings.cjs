@@ -68,6 +68,10 @@ function installNative(moduleName, version) {
       env: {
         ...process.env,
         npm_config_include: 'optional',
+        NPM_CONFIG_OMIT: undefined,
+        npm_config_omit: undefined,
+        NPM_CONFIG_PRODUCTION: undefined,
+        npm_config_production: undefined,
       },
     },
   );
