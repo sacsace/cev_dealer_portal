@@ -16,9 +16,12 @@ RUN env -u NPM_CONFIG_OMIT -u npm_config_omit -u NPM_CONFIG_PRODUCTION -u npm_co
 
 COPY prisma prisma
 COPY apps/api apps/api
+COPY scripts/docker-api-entrypoint.sh scripts/
 
-RUN npm run db:generate && npm run build --workspace=api
+RUN chmod +x scripts/docker-api-entrypoint.sh \
+  && npm run db:generate \
+  && npm run build --workspace=api
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "npm run db:deploy && npm run start:prod --workspace=api"]
+CMD ["sh", "scripts/docker-api-entrypoint.sh"]

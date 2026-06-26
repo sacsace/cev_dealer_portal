@@ -20,7 +20,7 @@
     "db:migrate:status": "prisma migrate status",
     "db:push": "prisma db push",
     "db:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-db.ps1",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:seed": "prisma db seed",
     "db:deploy": "prisma migrate deploy && npm run db:seed",
     "db:studio": "prisma studio"
   },
