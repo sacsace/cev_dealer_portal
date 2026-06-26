@@ -11,12 +11,14 @@ COPY apps/web/scripts/ensure-native-css-bindings.cjs apps/web/scripts/
 COPY apps/web/package.json apps/web/
 COPY apps/api/package.json apps/api/
 
-RUN npm ci --include=dev --include=optional --workspace=web --include-workspace-root --ignore-scripts
+RUN env -u NPM_CONFIG_OMIT -u npm_config_omit -u NPM_CONFIG_PRODUCTION -u npm_config_production \
+  npm ci --include=dev --include=optional --workspace=web --include-workspace-root --ignore-scripts
 
 COPY apps/web apps/web
 COPY prisma prisma
 
-RUN node scripts/ensure-native-css-bindings.cjs \
+RUN env -u NPM_CONFIG_OMIT -u npm_config_omit -u NPM_CONFIG_PRODUCTION -u npm_config_production \
+  node scripts/ensure-native-css-bindings.cjs \
   && npm run build --workspace=web
 
 EXPOSE 3000

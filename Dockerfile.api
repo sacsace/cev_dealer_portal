@@ -4,12 +4,14 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NPM_CONFIG_INCLUDE=optional
 
 COPY package.json package-lock.json .npmrc ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 
-RUN npm ci --include=dev --include-workspace-root
+RUN env -u NPM_CONFIG_OMIT -u npm_config_omit -u NPM_CONFIG_PRODUCTION -u npm_config_production \
+  npm ci --include=dev --include-workspace-root --ignore-scripts
 
 COPY prisma prisma
 COPY apps/api apps/api
