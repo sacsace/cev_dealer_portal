@@ -1,28 +1,11 @@
 [build]
-builder = "NIXPACKS"
-
-[build.nixpacksPlan]
-providers = ["node"]
-
-[build.nixpacksPlan.phases.setup]
-nixPkgs = ["nodejs_22"]
-
-[build.nixpacksPlan.phases.install]
-dependsOn = ["setup"]
-cmds = [
-  "npm ci --include=dev --include=optional --include-workspace-root --ignore-scripts",
-]
-
-[build.nixpacksPlan.phases.build]
-dependsOn = ["install"]
-cmds = [
-  "node scripts/ensure-native-css-bindings.cjs",
-  "npm run build --workspace=web",
-]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.web"
 
 [deploy]
 startCommand = "npm run start --workspace=web"
-# Set in Railway UI if using Docker: builder = "DOCKERFILE", dockerfilePath = "Dockerfile.web"
+
+# Remove NPM_CONFIG_OMIT from Railway Variables if you still see omit="" warnings.
 
 [variables]
 NPM_CONFIG_INCLUDE = "optional"
