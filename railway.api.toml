@@ -6,7 +6,7 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile.api"
 
 [deploy]
-startCommand = "npm run db:migrate:deploy && npm run start:prod --workspace=api"
+startCommand = "npm run db:deploy && npm run start:prod --workspace=api"
 healthcheckPath = "/api"
 healthcheckTimeout = 120
 

@@ -13,7 +13,7 @@
     "kill-ports": "powershell -ExecutionPolicy Bypass -File scripts/kill-ports.ps1",
     "build": "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
     "build:railway:api": "npm run db:generate && npm run build --workspace=api",
-    "start:railway:api": "npm run db:migrate:deploy && npm run start:prod --workspace=api",
+    "start:railway:api": "npm run db:deploy && npm run start:prod --workspace=api",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
@@ -21,6 +21,7 @@
     "db:push": "prisma db push",
     "db:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-db.ps1",
     "db:seed": "tsx prisma/seed.ts",
+    "db:deploy": "prisma migrate deploy && npm run db:seed",
     "db:studio": "prisma studio"
   },
   "devDependencies": {
