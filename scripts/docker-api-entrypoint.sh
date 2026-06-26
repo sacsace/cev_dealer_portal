@@ -13,10 +13,16 @@ if [ -z "$DATABASE_URL" ]; then
   exit 1
 fi
 
+db_host=$(node -e "try { const u = new URL(process.env.DATABASE_URL); console.log(u.hostname + ':' + (u.port || '5432') + u.pathname); } catch { console.log('invalid'); }")
+log "Target database: ${db_host}"
+
+log 'Checking migration status...'
+npx prisma migrate status || true
+
 log 'Waiting for Postgres and applying migrations...'
 attempt=1
 max_attempts=10
-until npm run db:migrate:deploy; do
+until npx prisma migrate deploy; do
   if [ "$attempt" -ge "$max_attempts" ]; then
     log 'ERROR: prisma migrate deploy failed after retries.'
     exit 1
