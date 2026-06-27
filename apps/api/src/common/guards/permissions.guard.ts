@@ -35,7 +35,22 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('Dealer cannot access admin resources');
     }
 
-    if (user.role === UserRole.ADMIN || user.role === UserRole.USER) {
+    if (user.role === UserRole.ADMIN) {
+      if (required.module === PermissionModule.SETTINGS && required.action !== PermissionAction.VIEW) {
+        throw new ForbiddenException('Cannot modify system settings');
+      }
+      return true;
+    }
+
+    if (user.role === UserRole.USER) {
+      const userAllowedModules: PermissionModule[] = [
+        PermissionModule.ORDERS,
+        PermissionModule.JOB_CARDS,
+        PermissionModule.REPORTS,
+      ];
+      if (!userAllowedModules.includes(required.module)) {
+        throw new ForbiddenException('Insufficient permissions');
+      }
       if (required.module === PermissionModule.SETTINGS && required.action !== PermissionAction.VIEW) {
         throw new ForbiddenException('Cannot modify system settings');
       }

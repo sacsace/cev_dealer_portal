@@ -30,7 +30,7 @@ export class JobCardsController {
   constructor(private jobCardsService: JobCardsService) {}
 
   @Get()
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.DEALER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER, UserRole.DEALER)
   findAll(
     @CurrentUser() user: { role: UserRole; dealerId?: string },
     @Query('page') page = '1',
@@ -41,7 +41,7 @@ export class JobCardsController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.DEALER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER, UserRole.DEALER)
   findOne(
     @Param('id') id: string,
     @CurrentUser() user: { role: UserRole; dealerId?: string },

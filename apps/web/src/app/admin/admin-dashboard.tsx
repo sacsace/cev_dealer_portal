@@ -13,9 +13,11 @@ import {
 } from 'lucide-react';
 import { getSession, type ApiUser } from '@/lib/api';
 import {
+  canViewAdminCatalogStats,
+  canViewAdminClaimStats,
+  canViewAdminJobCardStats,
   canViewAdminOrderStats,
   canViewAdminOrganizationStats,
-  canViewAdminServiceStats,
 } from '@/lib/admin-access';
 import { filterAdminQuickActions } from '@/lib/admin-quick-actions';
 import { fetchAdminDashboardData, type AdminDashboardData } from '@/lib/admin-stats';
@@ -67,13 +69,15 @@ export default function AdminDashboardPage() {
           { label: t('admin.pendingOrders'), value: stats?.pendingOrders ?? '—', icon: ClipboardList, tone: 'yellow' as const, href: '/admin/orders' },
         ]
       : []),
-    ...(canViewAdminServiceStats(user?.role)
-      ? [
-          { label: t('admin.pendingJobCards'), value: stats?.pendingJobCards ?? '—', icon: Wrench, tone: 'green' as const, href: '/admin/job-cards' },
-          { label: t('admin.pendingClaims'), value: stats?.pendingClaims ?? '—', icon: ShieldCheck, tone: 'yellow' as const, href: '/admin/claims' },
-        ]
+    ...(canViewAdminJobCardStats(user?.role)
+      ? [{ label: t('admin.pendingJobCards'), value: stats?.pendingJobCards ?? '—', icon: Wrench, tone: 'green' as const, href: '/admin/job-cards' }]
       : []),
-    { label: t('admin.lowStock'), value: stats?.lowStockParts ?? '—', icon: AlertCircle, tone: 'yellow' as const, href: '/admin/parts' },
+    ...(canViewAdminClaimStats(user?.role)
+      ? [{ label: t('admin.pendingClaims'), value: stats?.pendingClaims ?? '—', icon: ShieldCheck, tone: 'yellow' as const, href: '/admin/claims' }]
+      : []),
+    ...(canViewAdminCatalogStats(user?.role)
+      ? [{ label: t('admin.lowStock'), value: stats?.lowStockParts ?? '—', icon: AlertCircle, tone: 'yellow' as const, href: '/admin/parts' }]
+      : []),
   ];
 
   const quickActions = useMemo(() => filterAdminQuickActions(user?.role), [user?.role]);
@@ -187,7 +191,7 @@ export default function AdminDashboardPage() {
           </Card>
         )}
 
-        {canViewAdminServiceStats(user?.role) && (
+        {canViewAdminClaimStats(user?.role) && (
           <Card className="admin-dashboard-chart-card p-5 md:p-6">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>

@@ -7,9 +7,11 @@ import {
   type ApiUser,
 } from '@/lib/api';
 import {
+  canViewAdminCatalogStats,
+  canViewAdminClaimStats,
+  canViewAdminJobCardStats,
   canViewAdminOrderStats,
   canViewAdminOrganizationStats,
-  canViewAdminServiceStats,
 } from '@/lib/admin-access';
 
 export interface AdminStats {
@@ -75,7 +77,9 @@ function toStatusRows(record: Record<string, number>) {
 export async function fetchAdminDashboardData(role?: ApiUser['role'] | null): Promise<AdminDashboardData> {
   const includeOrganization = canViewAdminOrganizationStats(role);
   const includeOrders = canViewAdminOrderStats(role);
-  const includeService = canViewAdminServiceStats(role);
+  const includeJobCards = canViewAdminJobCardStats(role);
+  const includeClaims = canViewAdminClaimStats(role);
+  const includeCatalog = canViewAdminCatalogStats(role);
 
   const [
     dealers,
@@ -89,10 +93,10 @@ export async function fetchAdminDashboardData(role?: ApiUser['role'] | null): Pr
     includeOrganization ? dealersApi.list({ limit: '1' }) : Promise.resolve({ data: [], meta: { total: 0 } }),
     includeOrders ? ordersApi.list({ limit: '500' }) : Promise.resolve({ data: [], meta: { total: 0 } }),
     includeOrders ? ordersApi.list({ status: 'SUBMITTED', limit: '1' }) : Promise.resolve({ data: [], meta: { total: 0 } }),
-    includeService ? jobCardsApi.list({ limit: '100' }) : Promise.resolve({ data: [], meta: { total: 0 } }),
-    includeService ? warrantyClaimsApi.list({ limit: '100' }) : Promise.resolve({ data: [], meta: { total: 0 } }),
-    partsApi.search({ stockStatus: 'out_of_stock', limit: '1' }),
-    includeService ? warrantyClaimsApi.list({ limit: '500' }) : Promise.resolve({ data: [], meta: { total: 0 } }),
+    includeJobCards ? jobCardsApi.list({ limit: '100' }) : Promise.resolve({ data: [], meta: { total: 0 } }),
+    includeClaims ? warrantyClaimsApi.list({ limit: '100' }) : Promise.resolve({ data: [], meta: { total: 0 } }),
+    includeCatalog ? partsApi.search({ stockStatus: 'out_of_stock', limit: '1' }) : Promise.resolve({ data: [], meta: { total: 0 } }),
+    includeClaims ? warrantyClaimsApi.list({ limit: '500' }) : Promise.resolve({ data: [], meta: { total: 0 } }),
   ]);
 
   const todayOrders = ordersRes.data.filter((o) => isToday(o.createdAt)).length;
