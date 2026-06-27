@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { cartApi, partsApi, type Part } from '@/lib/api';
-import { Button, Card, PageTitle } from '@/components/ui';
+import { Button, Card, PageTitle, useAlertDialog } from '@/components/ui';
 import { formatCurrency } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
 
 export default function PartDetailPage() {
   const { t } = useI18n();
+  const { alert, alertDialog } = useAlertDialog();
   const { id } = useParams<{ id: string }>();
   const [part, setPart] = useState<Part | null>(null);
   const [qty, setQty] = useState(1);
@@ -21,7 +22,7 @@ export default function PartDetailPage() {
 
   async function addToCart() {
     await cartApi.addItem(part!.id, qty);
-    alert(t('common.addedToCart'));
+    await alert({ message: t('common.addedToCart'), variant: 'success' });
   }
 
   const rows = [
@@ -36,6 +37,7 @@ export default function PartDetailPage() {
 
   return (
     <div>
+      {alertDialog}
       <PageTitle title={part.partName} subtitle={part.partNumber} />
       <div className="grid gap-8 md:grid-cols-2">
         <Card>

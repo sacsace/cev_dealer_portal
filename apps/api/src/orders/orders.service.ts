@@ -8,7 +8,7 @@ import { AuditAction, OrderStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../common/services/audit.service';
 import { CartService } from '../cart/cart.service';
-import { CreateOrderDto, RejectOrderDto, ShipOrderDto } from './dto/order.dto';
+import { CreateOrderDto, RejectOrderDto, ShipOrderDto, UpdateShipmentDto } from './dto/order.dto';
 
 @Injectable()
 export class OrdersService {
@@ -183,28 +183,66 @@ export class OrdersService {
   }
 
   async ship(id: string, dto: ShipOrderDto, actor: { sub: string; role: UserRole }, ip?: string) {
+    return this.updateShipment(
+      id,
+      {
+        courierName: dto.courierName,
+        trackingNo: dto.trackingNo,
+        deliveryStatus: 'IN_TRANSIT',
+      },
+      actor,
+      ip,
+    );
+  }
+
+  async updateShipment(
+    id: string,
+    dto: UpdateShipmentDto,
+    actor: { sub: string; role: UserRole },
+    ip?: string,
+  ) {
     const before = await this.findOne(id, actor);
+
+    const editableStatuses: OrderStatus[] = [
+      OrderStatus.APPROVED,
+      OrderStatus.PACKED,
+      OrderStatus.ORDER_SHIPPED,
+      OrderStatus.DELIVERED,
+    ];
+
+    if (!editableStatuses.includes(before.status)) {
+      throw new BadRequestException('Shipment can only be updated for approved orders');
+    }
+
+    const statusMap: Record<UpdateShipmentDto['deliveryStatus'], OrderStatus> = {
+      PREPARING: OrderStatus.PACKED,
+      IN_TRANSIT: OrderStatus.ORDER_SHIPPED,
+      DELIVERED: OrderStatus.DELIVERED,
+    };
 
     const order = await this.prisma.order.update({
       where: { id },
-      data: { status: OrderStatus.ORDER_SHIPPED },
+      data: { status: statusMap[dto.deliveryStatus] },
     });
+
+    const now = new Date();
+    const shipmentData = {
+      courierName: dto.courierName,
+      trackingNo: dto.trackingNo,
+      deliveryStatus: dto.deliveryStatus,
+      dispatchDate:
+        dto.deliveryStatus === 'PREPARING' ? undefined : before.shipment?.dispatchDate ?? now,
+      deliveryDate: dto.deliveryStatus === 'DELIVERED' ? now : null,
+    };
 
     await this.prisma.shipment.upsert({
       where: { orderId: id },
       create: {
         orderId: id,
-        courierName: dto.courierName,
-        trackingNo: dto.trackingNo,
-        dispatchDate: dto.dispatchDate ? new Date(dto.dispatchDate) : new Date(),
-        deliveryStatus: 'In Transit',
+        ...shipmentData,
+        dispatchDate: shipmentData.dispatchDate ?? undefined,
       },
-      update: {
-        courierName: dto.courierName,
-        trackingNo: dto.trackingNo,
-        dispatchDate: dto.dispatchDate ? new Date(dto.dispatchDate) : new Date(),
-        deliveryStatus: 'In Transit',
-      },
+      update: shipmentData,
     });
 
     await this.audit.log({

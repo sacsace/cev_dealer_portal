@@ -12,7 +12,7 @@ import {
 import type { Request } from 'express';
 import { OrderStatus, UserRole, PermissionModule, PermissionAction } from '@prisma/client';
 import { OrdersService } from './orders.service';
-import { CreateOrderDto, RejectOrderDto, ShipOrderDto } from './dto/order.dto';
+import { CreateOrderDto, RejectOrderDto, ShipOrderDto, UpdateShipmentDto } from './dto/order.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
@@ -92,5 +92,18 @@ export class OrdersController {
     @Req() req: Request,
   ) {
     return this.ordersService.ship(id, dto, user, req.ip);
+  }
+
+  @Put(':id/shipment')
+  @UseGuards(PermissionsGuard)
+  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @RequirePermission(PermissionModule.ORDERS, PermissionAction.EDIT)
+  updateShipment(
+    @Param('id') id: string,
+    @Body() dto: UpdateShipmentDto,
+    @CurrentUser() user: { sub: string; role: UserRole },
+    @Req() req: Request,
+  ) {
+    return this.ordersService.updateShipment(id, dto, user, req.ip);
   }
 }

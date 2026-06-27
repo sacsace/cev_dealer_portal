@@ -49,9 +49,9 @@ export function ConfirmDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+    <div className="portal-dialog-root">
       <div
-        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+        className="portal-dialog-backdrop"
         onClick={loading ? undefined : onCancel}
         aria-hidden
       />
@@ -60,26 +60,26 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={messageId}
-        className="relative z-10 w-full max-w-md overflow-hidden rounded-[var(--radius-md)] border border-[var(--border)] bg-white shadow-[var(--shadow-lg)]"
+        className="portal-dialog-panel"
       >
-        <div className="px-6 pb-2 pt-6">
+        <div className="portal-dialog-body">
           <div
             className={cn(
-              'mb-4 flex h-11 w-11 items-center justify-center rounded-full',
-              variant === 'danger' ? 'portal-alert portal-alert--error' : 'bg-[rgba(140,198,63,0.12)] text-[var(--cev-green)]',
+              'portal-dialog-icon',
+              variant === 'danger' ? 'portal-dialog-icon--danger' : 'portal-dialog-icon--success',
             )}
           >
             <AlertTriangle className="h-5 w-5" strokeWidth={1.75} />
           </div>
-          <h2 id={titleId} className="text-base font-semibold text-[var(--text-primary)]">
+          <h2 id={titleId} className="portal-dialog-title">
             {title ?? t('common.deleteConfirmTitle')}
           </h2>
-          <p id={messageId} className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
+          <p id={messageId} className="portal-dialog-message">
             {message}
           </p>
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-[var(--border)] px-6 py-4">
+        <div className="portal-dialog-footer">
           <button type="button" onClick={onCancel} disabled={loading} className="apple-btn apple-btn-secondary">
             {cancelLabel ?? t('common.cancel')}
           </button>

@@ -100,6 +100,11 @@ export function WarrantyClaimForm({
 
     try {
       const payload = toPayload(form);
+      if (isEdit && claim) {
+        payload.warrantyClaimDate = claim.warrantyClaimDate.slice(0, 10);
+      } else {
+        payload.warrantyClaimDate = new Date().toISOString().slice(0, 10);
+      }
       let saved: WarrantyClaim;
 
       if (isEdit && claim) {
@@ -133,9 +138,8 @@ export function WarrantyClaimForm({
           label={t('warranty.date')}
           type="date"
           required
-          disabled={readOnly}
+          disabled
           value={form.warrantyClaimDate}
-          onChange={(e) => update('warrantyClaimDate', e.target.value)}
         />
         <Input
           label={t('warranty.invoiceNo')}

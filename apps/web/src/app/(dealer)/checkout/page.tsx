@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cartApi, ordersApi, getSession } from '@/lib/api';
-import { Button, Card, Input, PageTitle } from '@/components/ui';
+import { Button, Card, Input, PageTitle, useAlertDialog } from '@/components/ui';
 import { formatCurrency } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
 
 export default function CheckoutPage() {
   const { t } = useI18n();
+  const { alert, alertDialog } = useAlertDialog();
   const router = useRouter();
   const user = getSession();
   const [cart, setCart] = useState<Awaited<ReturnType<typeof cartApi.get>> | null>(null);
@@ -27,7 +28,7 @@ export default function CheckoutPage() {
 
   async function placeOrder() {
     await ordersApi.create(form);
-    alert(t('common.orderPlaced'));
+    await alert({ message: t('common.orderPlaced'), variant: 'success' });
     router.push('/orders');
   }
 
@@ -35,6 +36,7 @@ export default function CheckoutPage() {
 
   return (
     <div>
+      {alertDialog}
       <PageTitle title={t('checkout.title')} subtitle={t('checkout.subtitle')} />
       <div className="grid gap-8 md:grid-cols-2">
         <Card className="space-y-4">

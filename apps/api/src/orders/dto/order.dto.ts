@@ -1,4 +1,4 @@
-import { IsEmail, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateOrderDto {
@@ -37,6 +37,18 @@ export class ShipOrderDto {
 
   @IsOptional()
   dispatchDate?: string;
+}
+
+export class UpdateShipmentDto {
+  @IsString()
+  courierName: string;
+
+  @IsString()
+  trackingNo: string;
+
+  @IsString()
+  @IsIn(['PREPARING', 'IN_TRANSIT', 'DELIVERED'])
+  deliveryStatus: 'PREPARING' | 'IN_TRANSIT' | 'DELIVERED';
 }
 
 export class RejectOrderDto {

@@ -231,6 +231,7 @@ export const ordersApi = {
     const query = params ? `?${new URLSearchParams(params)}` : '';
     return apiFetch<{ data: Order[]; meta: PaginationMeta }>(`/orders${query}`);
   },
+  get: (id: string) => apiFetch<Order>(`/orders/${id}`),
   create: (data: Record<string, string | number>) =>
     apiFetch<Order>('/orders', { method: 'POST', body: JSON.stringify(data) }),
   approve: (id: string) => apiFetch<Order>(`/orders/${id}/approve`, { method: 'PUT' }),
@@ -238,6 +239,14 @@ export const ordersApi = {
     apiFetch<Order>(`/orders/${id}/reject`, {
       method: 'PUT',
       body: JSON.stringify({ reason: reason ?? 'Rejected by admin' }),
+    }),
+  updateShipment: (
+    id: string,
+    data: { courierName: string; trackingNo: string; deliveryStatus: string },
+  ) =>
+    apiFetch<Order>(`/orders/${id}/shipment`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
     }),
 };
 
@@ -594,15 +603,40 @@ export type UpdateStaffUserPayload = Partial<Omit<CreateStaffUserPayload, 'passw
   password?: string;
 };
 
+export interface OrderItem {
+  partNumber: string;
+  partName: string;
+  quantity: number;
+  unitPrice: number | string;
+  gstAmount?: number | string;
+  totalAmount: number | string;
+}
+
+export interface OrderShipment {
+  courierName?: string;
+  trackingNo?: string;
+  deliveryStatus?: string;
+  dispatchDate?: string;
+  deliveryDate?: string;
+}
+
 export interface Order {
   id: string;
   orderNo: string;
   status: string;
   createdAt: string;
   grandTotal: number | string;
-  items: Array<{ quantity: number }>;
+  subtotal?: number | string;
+  gstAmount?: number | string;
+  freightCharge?: number | string;
+  billingAddress?: string;
+  shippingAddress?: string;
+  contactPerson?: string;
+  mobile?: string;
+  email?: string;
+  items: OrderItem[];
   dealer?: { dealerName: string; dealerCode: string };
-  shipment?: { trackingNo?: string; courierName?: string };
+  shipment?: OrderShipment;
 }
 
 export interface JobCardFile {

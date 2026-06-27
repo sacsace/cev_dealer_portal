@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { cartApi, lookupApi, partsApi, type Part, type Category, type VehicleModel } from '@/lib/api';
-import { Button, Card, DataTable, Input, PageTitle, Select } from '@/components/ui';
+import { Button, Card, DataTable, Input, PageTitle, Select, useAlertDialog } from '@/components/ui';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
 
@@ -60,6 +60,7 @@ function PartCard({
 
 export default function PartsPageContent() {
   const { t } = useI18n();
+  const { alert, alertDialog } = useAlertDialog();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [parts, setParts] = useState<Part[]>([]);
@@ -121,7 +122,7 @@ export default function PartsPageContent() {
 
   async function addToCart(partId: string) {
     await cartApi.addItem(partId, 1);
-    alert(t('common.addedToCart'));
+    await alert({ message: t('common.addedToCart'), variant: 'success' });
   }
 
   const emptyMessage =
@@ -131,9 +132,12 @@ export default function PartsPageContent() {
 
   return (
     <div className="w-full min-w-0">
-      <PageTitle title={t('parts.title')} subtitle={t('parts.subtitle')} />
+      {alertDialog}
+      <div className="parts-page-shell">
+        <div className="parts-page-heading">
+          <PageTitle title={t('parts.title')} subtitle={t('parts.subtitle')} className="mb-0" />
+        </div>
 
-      <div className="parts-page-layout">
         <Card className="parts-filter-card">
           <h3 className="parts-filter-title">{t('common.filters')}</h3>
           <form onSubmit={handleSearch} className="space-y-4">
@@ -167,7 +171,7 @@ export default function PartsPageContent() {
           </form>
         </Card>
 
-        <div className="min-w-0">
+        <div className="parts-results-column min-w-0">
           <div className="parts-results-toolbar">
             <p className="parts-results-count">
               {loading ? t('common.loading') : t('parts.resultCount').replace('{count}', String(parts.length))}

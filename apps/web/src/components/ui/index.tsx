@@ -4,9 +4,17 @@ import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
 
-export function PageTitle({ title, subtitle }: { title: string; subtitle?: string }) {
+export function PageTitle({
+  title,
+  subtitle,
+  className,
+}: {
+  title: string;
+  subtitle?: string;
+  className?: string;
+}) {
   return (
-    <div className="mb-6">
+    <div className={cn('mb-6', className)}>
       <h1 className="apple-headline">{title}</h1>
       {subtitle && <p className="apple-subhead mt-1.5">{subtitle}</p>}
     </div>
@@ -280,11 +288,34 @@ export function StatusBadge({ status }: { status: string }) {
   );
 }
 
+export function DeliveryStatusBadge({ status }: { status: string }) {
+  const { t } = useI18n();
+  const key = status.replace(/\s+/g, '_').toUpperCase();
+  const label =
+    t(`deliveryStatus.${key}`) !== `deliveryStatus.${key}`
+      ? t(`deliveryStatus.${key}`)
+      : status.replace(/_/g, ' ');
+
+  const tones: Record<string, string> = {
+    PREPARING: 'status-badge--warning',
+    IN_TRANSIT: 'status-badge--purple',
+    DELIVERED: 'status-badge--success',
+  };
+
+  return (
+    <span className={cn('status-badge', tones[key] ?? 'status-badge--neutral')}>
+      {label}
+    </span>
+  );
+}
+
 export { Alert, IconButton, KpiCard, SegmentedControl } from './portal-primitives';
 
 export { LanguageSwitcher } from './language-switcher';
 export { ConfirmDialog } from './confirm-dialog';
 export { useConfirmDialog } from './use-confirm-dialog';
+export { AlertDialog } from './alert-dialog';
+export { useAlertDialog } from './use-alert-dialog';
 export { PortalSearchBar } from './portal-search-bar';
 export { PortalStatusTabs } from './portal-status-tabs';
 export type { StatusTab } from './portal-status-tabs';
