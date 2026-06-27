@@ -27,7 +27,7 @@ export class DealersController {
   constructor(private dealersService: DealersService) {}
 
   @Get()
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN)
   @RequirePermission(PermissionModule.DEALER, PermissionAction.VIEW)
   findAll(
     @Query('page') page = '1',
@@ -45,7 +45,7 @@ export class DealersController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER, UserRole.DEALER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.DEALER)
   findOne(@Param('id') id: string, @CurrentUser() user: { role: UserRole; dealerId?: string }) {
     return this.dealersService.findOne(id, user);
   }

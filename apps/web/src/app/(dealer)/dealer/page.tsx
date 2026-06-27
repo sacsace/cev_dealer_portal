@@ -16,6 +16,7 @@ import {
 import { lookupApi, partsApi, refreshSession, type ApiUser, type Category, type Part, type VehicleModel } from '@/lib/api';
 import { buildDealerSearchUrl } from '@/lib/dealer-search';
 import { formatCurrency, cn } from '@/lib/utils';
+import { Button } from '@/components/ui';
 import { useI18n } from '@/components/providers/i18n-provider';
 
 export default function DealerHomePage() {
@@ -73,7 +74,7 @@ export default function DealerHomePage() {
       <section className="dealer-home-hero rounded-[var(--radius-lg)] px-6 py-8 md:px-8 md:py-10">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-xl">
-            <p className="text-[13px] font-semibold uppercase tracking-wide text-[var(--cev-blue)]">
+            <p className="text-[13px] font-semibold uppercase tracking-wide text-[var(--cev-green)]">
               {t('home.title')}
             </p>
             <h1 className="mt-2 text-[clamp(1.75rem,4vw,2.25rem)] font-semibold tracking-tight text-[var(--text-primary)]">
@@ -95,9 +96,9 @@ export default function DealerHomePage() {
                 className="apple-input w-full"
               />
             </div>
-            <button type="submit" className="apple-btn-primary w-full shrink-0 px-5 sm:w-auto">
+            <Button type="submit" className="w-full shrink-0 sm:w-auto">
               {t('common.search')}
-            </button>
+            </Button>
           </form>
         </div>
       </section>
@@ -117,7 +118,7 @@ export default function DealerHomePage() {
                 className={cn(
                   'mb-4 flex h-12 w-12 items-center justify-center rounded-[var(--radius-sm)]',
                   item.tone === 'repair'
-                    ? 'bg-[rgba(0,174,239,0.12)] text-[var(--cev-blue)]'
+                    ? 'bg-[rgba(140,198,63,0.12)] text-[var(--cev-green)]'
                     : 'bg-[rgba(140,198,63,0.16)] text-[#5a8f24]',
                 )}
               >
@@ -147,7 +148,7 @@ export default function DealerHomePage() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-secondary)]/60 px-4 py-3.5 transition-colors hover:border-[rgba(0,174,239,0.25)] hover:bg-white"
+              className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-secondary)]/60 px-4 py-3.5 transition-colors hover:border-[rgba(140,198,63,0.25)] hover:bg-white"
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[var(--accent)] shadow-[var(--shadow-sm)]">
                 <item.icon className="h-4 w-4" strokeWidth={1.75} />
@@ -212,7 +213,7 @@ export default function DealerHomePage() {
                     <span
                       className={cn(
                         'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium',
-                        inStock ? 'bg-[#e8faf0] text-[#248a3d]' : 'bg-[#fff0ef] text-[#ff3b30]',
+                        inStock ? 'status-badge status-badge--success' : 'status-badge status-badge--danger',
                       )}
                     >
                       {inStock ? t('common.available') : t('common.outOfStock')}

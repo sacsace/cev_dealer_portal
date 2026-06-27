@@ -1,13 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Trash2 } from 'lucide-react';
 import { categoriesApi, type Category } from '@/lib/api';
 import { Button, DataTable, PageTitle, StatusBadge, useConfirmDialog } from '@/components/ui';
+import { AdminActionAlert, AdminBulkSelectionBar, AdminTableDeleteButton } from '@/components/admin/admin-list-tools';
 import { AdminPageBody, AdminSearchBar } from '@/components/admin/admin-page-shell';
 import { formatDate } from '@/lib/utils';
+import { useTableSelection } from '@/hooks/use-table-selection';
 import { useI18n } from '@/components/providers/i18n-provider';
 
 export default function AdminCatalogPage() {
@@ -17,9 +18,9 @@ export default function AdminCatalogPage() {
   const [items, setItems] = useState<Category[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [actionError, setActionError] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const { selectedIds, setSelectedIds, selection } = useTableSelection(items);
 
   const load = useCallback(async (q = search) => {
     setLoading(true);
@@ -35,39 +36,11 @@ export default function AdminCatalogPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, t]);
+  }, [search, t, setSelectedIds]);
 
   useEffect(() => {
     load();
   }, [load]);
-
-  const allSelected = items.length > 0 && items.every((item) => selectedIds.has(item.id));
-  const someSelected = items.some((item) => selectedIds.has(item.id));
-
-  const selection = useMemo(
-    () => ({
-      selectedIds,
-      allSelected,
-      someSelected,
-      onToggle: (id: string) => {
-        setSelectedIds((prev) => {
-          const next = new Set(prev);
-          if (next.has(id)) next.delete(id);
-          else next.add(id);
-          return next;
-        });
-      },
-      onToggleAll: () => {
-        setSelectedIds((prev) => {
-          if (items.length > 0 && items.every((item) => prev.has(item.id))) {
-            return new Set();
-          }
-          return new Set(items.map((item) => item.id));
-        });
-      },
-    }),
-    [selectedIds, allSelected, someSelected, items],
-  );
 
   async function handleDeleteOne(item: Category) {
     const ok = await confirm({ message: t('admin.deleteCategoryConfirm') });
@@ -128,20 +101,11 @@ export default function AdminCatalogPage() {
         }}
       />
 
-      {selectedIds.size > 0 && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--border)] bg-white px-4 py-3 shadow-[var(--shadow-sm)]">
-          <span className="text-[13px] text-[var(--text-secondary)]">
-            {t('admin.selectedCount').replace('{count}', String(selectedIds.size))}
-          </span>
-          <Button variant="danger" disabled={deleting} onClick={handleBulkDelete}>
-            {deleting ? t('common.loading') : t('admin.deleteSelected')}
-          </Button>
-        </div>
-      )}
+      {selectedIds.size > 0 ? (
+        <AdminBulkSelectionBar count={selectedIds.size} deleting={deleting} onDelete={handleBulkDelete} />
+      ) : null}
 
-      {actionError && (
-        <p className="mb-4 rounded-lg bg-[#fff0ef] px-3 py-2 text-sm text-[#ff3b30]">{actionError}</p>
-      )}
+      {actionError ? <AdminActionAlert message={actionError} /> : null}
 
       {loading ? (
         <p className="text-sm text-[var(--text-tertiary)]">{t('common.loading')}</p>
@@ -172,14 +136,7 @@ export default function AdminCatalogPage() {
             if (!item) return null;
 
             return (
-              <button
-                type="button"
-                onClick={() => handleDeleteOne(item)}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-secondary)] hover:bg-[#fff0ef] hover:text-[#ff3b30]"
-                aria-label={t('common.delete')}
-              >
-                <Trash2 className="h-4 w-4" strokeWidth={1.75} />
-              </button>
+              <AdminTableDeleteButton onClick={() => handleDeleteOne(item)} />
             );
           }}
         />

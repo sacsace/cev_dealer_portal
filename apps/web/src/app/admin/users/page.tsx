@@ -1,10 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { getSession, usersApi, type StaffUser } from '@/lib/api';
 import { Button, DataTable, PageTitle, StatusBadge, useConfirmDialog } from '@/components/ui';
 import { OperatorFormDialog } from '@/components/admin/operator-form-dialog';
+import { AdminActionAlert, AdminTableDeleteButton } from '@/components/admin/admin-list-tools';
 import { AdminPageBody, AdminSearchBar } from '@/components/admin/admin-page-shell';
 import { useI18n } from '@/components/providers/i18n-provider';
 
@@ -81,9 +82,7 @@ export default function AdminUsersPage() {
         }}
       />
 
-      {actionError && (
-        <p className="mb-4 rounded-lg bg-[#fff0ef] px-3 py-2 text-sm text-[#ff3b30]">{actionError}</p>
-      )}
+      {actionError ? <AdminActionAlert message={actionError} /> : null}
 
       {loading ? (
         <p className="text-sm text-[var(--text-tertiary)]">{t('common.loading')}</p>
@@ -123,15 +122,10 @@ export default function AdminUsersPage() {
                 >
                   <Pencil className="h-4 w-4" strokeWidth={1.75} />
                 </button>
-                <button
-                  type="button"
+                <AdminTableDeleteButton
                   onClick={() => handleDelete(user)}
                   disabled={session?.id === user.id}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-secondary)] hover:bg-[#fff0ef] hover:text-[#ff3b30] disabled:opacity-40"
-                  aria-label={t('common.delete')}
-                >
-                  <Trash2 className="h-4 w-4" strokeWidth={1.75} />
-                </button>
+                />
               </div>
             );
           }}

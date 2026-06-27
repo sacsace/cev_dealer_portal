@@ -113,7 +113,7 @@ export class LookupController {
 
   @Get('problem-types/manage')
   @UseGuards(PermissionsGuard)
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN)
   @RequirePermission(PermissionModule.JOB_CARDS, PermissionAction.VIEW)
   findAllProblemTypes(
     @Query('page') page = '1',
@@ -125,7 +125,7 @@ export class LookupController {
 
   @Get('problem-types/:id')
   @UseGuards(PermissionsGuard)
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN)
   @RequirePermission(PermissionModule.JOB_CARDS, PermissionAction.VIEW)
   findOneProblemType(@Param('id') id: string) {
     return this.lookupService.findOneProblemType(id);
@@ -133,7 +133,7 @@ export class LookupController {
 
   @Post('problem-types')
   @UseGuards(PermissionsGuard)
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN)
   @RequirePermission(PermissionModule.JOB_CARDS, PermissionAction.CREATE)
   createProblemType(
     @Body() dto: CreateProblemTypeDto,
@@ -145,7 +145,7 @@ export class LookupController {
 
   @Put('problem-types/:id')
   @UseGuards(PermissionsGuard)
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN)
   @RequirePermission(PermissionModule.JOB_CARDS, PermissionAction.EDIT)
   updateProblemType(
     @Param('id') id: string,
@@ -175,7 +175,7 @@ export class LookupController {
 
   @Get('job-card-types/manage')
   @UseGuards(PermissionsGuard)
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN)
   @RequirePermission(PermissionModule.JOB_CARDS, PermissionAction.VIEW)
   findAllJobCardTypes(
     @Query('page') page = '1',
@@ -187,7 +187,7 @@ export class LookupController {
 
   @Get('job-card-types/:id')
   @UseGuards(PermissionsGuard)
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN)
   @RequirePermission(PermissionModule.JOB_CARDS, PermissionAction.VIEW)
   findOneJobCardType(@Param('id') id: string) {
     return this.lookupService.findOneJobCardType(id);
@@ -195,7 +195,7 @@ export class LookupController {
 
   @Post('job-card-types')
   @UseGuards(PermissionsGuard)
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN)
   @RequirePermission(PermissionModule.JOB_CARDS, PermissionAction.CREATE)
   createJobCardType(
     @Body() dto: CreateJobCardTypeDto,
@@ -207,7 +207,7 @@ export class LookupController {
 
   @Put('job-card-types/:id')
   @UseGuards(PermissionsGuard)
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN)
   @RequirePermission(PermissionModule.JOB_CARDS, PermissionAction.EDIT)
   updateJobCardType(
     @Param('id') id: string,

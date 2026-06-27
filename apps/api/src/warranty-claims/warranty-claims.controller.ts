@@ -31,7 +31,7 @@ export class WarrantyClaimsController {
   constructor(private warrantyClaimsService: WarrantyClaimsService) {}
 
   @Get()
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER, UserRole.DEALER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.DEALER)
   findAll(
     @CurrentUser() user: { role: UserRole; dealerId?: string },
     @Query('page') page = '1',
@@ -42,7 +42,7 @@ export class WarrantyClaimsController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER, UserRole.DEALER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.DEALER)
   findOne(
     @Param('id') id: string,
     @CurrentUser() user: { role: UserRole; dealerId?: string },
@@ -88,7 +88,7 @@ export class WarrantyClaimsController {
 
   @Put(':id/approve')
   @UseGuards(PermissionsGuard)
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN)
   @RequirePermission(PermissionModule.WARRANTY_CLAIMS, PermissionAction.APPROVE)
   approve(
     @Param('id') id: string,
@@ -101,7 +101,7 @@ export class WarrantyClaimsController {
 
   @Put(':id/reject')
   @UseGuards(PermissionsGuard)
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN)
   @RequirePermission(PermissionModule.WARRANTY_CLAIMS, PermissionAction.REJECT)
   reject(
     @Param('id') id: string,

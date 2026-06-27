@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { clearSession, getSession } from '@/lib/api';
+import { canAccessAdminPath } from '@/lib/admin-access';
 import { canAccessAdmin, canAccessDealer, getRoleHome } from '@/lib/auth';
 
 type AuthZone = 'dealer' | 'admin' | 'login' | 'public';
@@ -44,6 +45,11 @@ export function useAuthRedirect(zone: AuthZone) {
 
     if (zone === 'admin' && !canAccessAdmin(user.role)) {
       router.replace(getRoleHome(user.role));
+      return;
+    }
+
+    if (zone === 'admin' && !canAccessAdminPath(user.role, pathname)) {
+      router.replace('/admin');
       return;
     }
 

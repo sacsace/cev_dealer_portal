@@ -34,7 +34,7 @@ export const termsContent: Record<Locale, LegalDocumentContent> = {
           '포털은 CEV 공식 딜러 및 승인된 운영자를 위한 B2B 플랫폼으로, 다음 기능을 제공합니다.',
         ],
         bullets: [
-          '부품 카탈로그 검색 및 주문',
+          '부품 카테고리 검색 및 주문',
           'Job Card 등록 및 수리 이력 관리',
           'Warranty Claim 접수 및 진행 상태 조회',
           '운영·재고 관련 리포트(권한에 따라 제공)',
@@ -107,7 +107,7 @@ export const termsContent: Record<Locale, LegalDocumentContent> = {
         title: '2. Service Overview',
         paragraphs: ['The Portal is a B2B platform for authorized CEV dealers and staff, providing:'],
         bullets: [
-          'Parts catalog search and ordering',
+          'Parts category search and ordering',
           'Job Card entry and repair history',
           'Warranty claim submission and status tracking',
           'Operational and inventory reports (role-based)',

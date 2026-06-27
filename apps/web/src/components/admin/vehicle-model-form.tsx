@@ -123,7 +123,7 @@ export function VehicleModelForm({
         </Select>
       </div>
 
-      {error && <p className="rounded-lg bg-[#fff0ef] px-3 py-2 text-sm text-[#ff3b30]">{error}</p>}
+      {error && <p className="portal-alert portal-alert--error">{error}</p>}
 
       <div className="flex flex-wrap gap-2 border-t border-[var(--border)] pt-4">
         <Button type="submit" disabled={loading}>

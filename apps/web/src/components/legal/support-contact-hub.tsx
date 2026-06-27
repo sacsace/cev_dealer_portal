@@ -55,11 +55,11 @@ export function SupportContactHub() {
           <h3 className="legal-support-hub-block-title">{t('legal.businessHours')}</h3>
           <ul className="legal-support-hub-hours">
             <li>
-              <Clock className="h-4 w-4 shrink-0 text-[var(--cev-blue)]" strokeWidth={1.75} />
+              <Clock className="h-4 w-4 shrink-0 text-[var(--cev-green)]" strokeWidth={1.75} />
               <span>{t('legal.hoursWeekday')}</span>
             </li>
             <li>
-              <Clock className="h-4 w-4 shrink-0 text-[var(--cev-blue)]" strokeWidth={1.75} />
+              <Clock className="h-4 w-4 shrink-0 text-[var(--cev-green)]" strokeWidth={1.75} />
               <span>{t('legal.hoursSaturday')}</span>
             </li>
           </ul>
@@ -69,11 +69,11 @@ export function SupportContactHub() {
           <h3 className="legal-support-hub-block-title">{t('legal.corporateOffice')}</h3>
           <ul className="legal-support-contact-list">
             <li>
-              <MapPin className="h-4 w-4 shrink-0 text-[var(--cev-blue)]" strokeWidth={1.75} />
+              <MapPin className="h-4 w-4 shrink-0 text-[var(--cev-green)]" strokeWidth={1.75} />
               <span>{supportContactInfo.address}</span>
             </li>
             <li>
-              <Mail className="h-4 w-4 shrink-0 text-[var(--cev-blue)]" strokeWidth={1.75} />
+              <Mail className="h-4 w-4 shrink-0 text-[var(--cev-green)]" strokeWidth={1.75} />
               <a href={`mailto:${supportContactInfo.customerEmail}`} className="legal-inline-link">
                 {supportContactInfo.customerEmail}
               </a>
@@ -87,14 +87,14 @@ export function SupportContactHub() {
               <h3 className="legal-support-hub-dept-title">{t(departmentLabelKeys[dept.id])}</h3>
               <ul className="legal-support-hub-dept-list">
                 <li>
-                  <Mail className="h-3.5 w-3.5 shrink-0 text-[var(--cev-blue)]" strokeWidth={1.75} />
+                  <Mail className="h-3.5 w-3.5 shrink-0 text-[var(--cev-green)]" strokeWidth={1.75} />
                   <a href={`mailto:${dept.email}`} className="legal-inline-link">
                     {dept.email}
                   </a>
                 </li>
                 {dept.phones.map((item) => (
                   <li key={item}>
-                    <Phone className="h-3.5 w-3.5 shrink-0 text-[var(--cev-blue)]" strokeWidth={1.75} />
+                    <Phone className="h-3.5 w-3.5 shrink-0 text-[var(--cev-green)]" strokeWidth={1.75} />
                     <a href={phoneHref(item)} className="legal-inline-link">
                       {item}
                     </a>
@@ -156,7 +156,7 @@ export function SupportContactHub() {
               {message.length} / {MESSAGE_MAX}
             </p>
           </div>
-          <Button type="submit" className="legal-support-hub-submit w-full">
+          <Button type="submit" className="legal-support-hub-submit w-full" size="lg">
             {t('legal.sendMessage')}
           </Button>
         </form>

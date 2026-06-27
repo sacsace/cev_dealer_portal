@@ -25,7 +25,7 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Get()
-  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @Roles(UserRole.ROOT, UserRole.ADMIN)
   findAll(
     @Query('page') page = '1',
     @Query('limit') limit = '20',

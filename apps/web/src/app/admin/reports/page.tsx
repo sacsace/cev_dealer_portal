@@ -11,7 +11,8 @@ import {
   type ReportFilters,
   type ReportSummary,
 } from '@/lib/api';
-import { Button, Card, DataTable, PageTitle, Select, StatusBadge } from '@/components/ui';
+import { Button, Card, DataTable, KpiCard, PageTitle, SegmentedControl, Select, StatusBadge } from '@/components/ui';
+import { AdminActionAlert } from '@/components/admin/admin-list-tools';
 import { AdminPageBody } from '@/components/admin/admin-page-shell';
 import { ReportBarChart } from '@/components/admin/report-bar-chart';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -185,27 +186,14 @@ export default function AdminReportsPage() {
         </div>
       </Card>
 
-      <div className="mb-6 flex flex-wrap gap-2 border-b border-[var(--border)] pb-1">
-        {tabs.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            onClick={() => setTab(item.key)}
-            className={[
-              'rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors',
-              tab === item.key
-                ? 'bg-white text-[var(--accent)] shadow-[inset_0_-2px_0_var(--cev-blue)]'
-                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
-            ].join(' ')}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        tabs={tabs}
+        value={tab}
+        onChange={setTab}
+        ariaLabel={t('admin.reports')}
+      />
 
-      {actionError && (
-        <p className="mb-4 rounded-lg bg-[#fff0ef] px-3 py-2 text-sm text-[#ff3b30]">{actionError}</p>
-      )}
+      {actionError ? <AdminActionAlert message={actionError} /> : null}
 
       {loading ? (
         <p className="text-sm text-[var(--text-tertiary)]">{t('common.loading')}</p>
@@ -213,18 +201,15 @@ export default function AdminReportsPage() {
         <p className="text-sm text-[var(--text-tertiary)]">{t('common.noRecords')}</p>
       ) : tab === 'overview' ? (
         <>
-          <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="portal-kpi-grid portal-kpi-grid--4 mb-8">
             {overviewCards.map((item) => (
-              <Card key={item.label} className="!p-5">
-                <div className="text-sm text-[var(--text-secondary)]">{item.label}</div>
-                <div className="mt-1 text-2xl font-semibold tracking-tight">{item.value}</div>
-              </Card>
+              <KpiCard key={item.label} label={item.label} value={item.value} />
             ))}
           </div>
 
           <div className="mb-8 grid gap-6 xl:grid-cols-2">
             <section>
-              <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
+              <h2 className="portal-section-title">
                 <FileSpreadsheet className="h-4 w-4" strokeWidth={1.75} />
                 {t('admin.ordersByStatus')}
               </h2>
@@ -237,7 +222,7 @@ export default function AdminReportsPage() {
               />
             </section>
             <section>
-              <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
+              <h2 className="portal-section-title">
                 <FileSpreadsheet className="h-4 w-4" strokeWidth={1.75} />
                 {t('admin.claimsByStatus')}
               </h2>
@@ -252,7 +237,7 @@ export default function AdminReportsPage() {
           </div>
 
           <section>
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
+            <h2 className="portal-section-title">
               {t('admin.lowStockList')}
             </h2>
             <DataTable
@@ -268,7 +253,7 @@ export default function AdminReportsPage() {
         </>
       ) : tab === 'orders' && orderAnalysis ? (
         <>
-          <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="portal-kpi-grid portal-kpi-grid--5 mb-8">
             {[
               { label: t('admin.totalOrders'), value: orderAnalysis.summary.totalCount },
               { label: t('admin.reportTotalAmount'), value: formatCurrency(orderAnalysis.summary.totalAmount) },
@@ -276,10 +261,7 @@ export default function AdminReportsPage() {
               { label: t('admin.reportPendingOrders'), value: orderAnalysis.summary.pendingCount },
               { label: t('status.APPROVED'), value: orderAnalysis.summary.approvedCount },
             ].map((item) => (
-              <Card key={item.label} className="!p-5">
-                <div className="text-sm text-[var(--text-secondary)]">{item.label}</div>
-                <div className="mt-1 text-2xl font-semibold tracking-tight">{item.value}</div>
-              </Card>
+              <KpiCard key={item.label} label={item.label} value={item.value} />
             ))}
           </div>
 
@@ -296,7 +278,7 @@ export default function AdminReportsPage() {
 
           <div className="mb-8 grid gap-6 xl:grid-cols-2">
             <section>
-              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
+              <h2 className="portal-section-title">
                 {t('admin.reportOrdersByDealer')}
               </h2>
               <DataTable
@@ -305,7 +287,7 @@ export default function AdminReportsPage() {
               />
             </section>
             <section>
-              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
+              <h2 className="portal-section-title">
                 {t('admin.reportTopParts')}
               </h2>
               <DataTable
@@ -321,7 +303,7 @@ export default function AdminReportsPage() {
           </div>
 
           <section>
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
+            <h2 className="portal-section-title">
               {t('admin.reportRecentOrders')}
             </h2>
             <DataTable
@@ -344,7 +326,7 @@ export default function AdminReportsPage() {
         </>
       ) : tab === 'claims' && claimAnalysis ? (
         <>
-          <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="portal-kpi-grid portal-kpi-grid--5 mb-8">
             {[
               { label: t('admin.totalClaims'), value: claimAnalysis.summary.totalCount },
               { label: t('admin.reportTotalClaimAmount'), value: formatCurrency(claimAnalysis.summary.totalAmount) },
@@ -352,10 +334,7 @@ export default function AdminReportsPage() {
               { label: t('admin.reportPendingClaims'), value: claimAnalysis.summary.pendingCount },
               { label: t('admin.reportAvgClaimAmount'), value: formatCurrency(claimAnalysis.summary.averageClaimAmount) },
             ].map((item) => (
-              <Card key={item.label} className="!p-5">
-                <div className="text-sm text-[var(--text-secondary)]">{item.label}</div>
-                <div className="mt-1 text-2xl font-semibold tracking-tight">{item.value}</div>
-              </Card>
+              <KpiCard key={item.label} label={item.label} value={item.value} />
             ))}
           </div>
 
@@ -372,7 +351,7 @@ export default function AdminReportsPage() {
 
           <div className="mb-8 grid gap-6 xl:grid-cols-2">
             <section>
-              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
+              <h2 className="portal-section-title">
                 {t('admin.reportClaimsByDealer')}
               </h2>
               <DataTable
@@ -381,7 +360,7 @@ export default function AdminReportsPage() {
               />
             </section>
             <section>
-              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
+              <h2 className="portal-section-title">
                 {t('admin.reportClaimsByReason')}
               </h2>
               <DataTable
@@ -392,7 +371,7 @@ export default function AdminReportsPage() {
           </div>
 
           <section>
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
+            <h2 className="portal-section-title">
               {t('admin.reportRecentClaims')}
             </h2>
             <DataTable

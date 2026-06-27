@@ -210,7 +210,7 @@ export function OperatorFormDialog({
                 </option>
               ))}
             </Select>
-            {error && <p className="rounded-lg bg-[#fff0ef] px-3 py-2 text-sm text-[#ff3b30]">{error}</p>}
+            {error && <p className="portal-alert portal-alert--error">{error}</p>}
           </div>
 
           <div className="flex justify-end gap-2 border-t border-[var(--border)] px-5 py-4">

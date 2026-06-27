@@ -77,7 +77,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
               {error && <p className="login-error">{error}</p>}
-              <Button type="submit" className="login-submit w-full" disabled={loading}>
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
                 {loading ? t('common.signingIn') : t('common.login')}
               </Button>
             </form>

@@ -31,7 +31,7 @@ export function ReportBarChart({
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-[var(--bg-secondary)]">
               <div
-                className="h-full rounded-full bg-[var(--cev-blue)] transition-all"
+                className="h-full rounded-full bg-[var(--cev-green)] transition-all"
                 style={{ width: `${width}%` }}
               />
             </div>

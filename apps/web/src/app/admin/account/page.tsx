@@ -98,7 +98,7 @@ export default function AdminAccountPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
-            {error && <p className="text-[13px] text-[#ff3b30]">{error}</p>}
+            {error && <p className="portal-alert portal-alert--error portal-alert--inline">{error}</p>}
             {message && <p className="text-[13px] text-[#248a3d]">{message}</p>}
             <Button type="submit" disabled={loading}>
               {loading ? t('common.loading') : t('account.savePassword')}

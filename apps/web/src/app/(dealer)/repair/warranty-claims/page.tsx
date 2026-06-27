@@ -67,7 +67,7 @@ export default function WarrantyClaimListPage() {
       </Card>
 
       {actionError && (
-        <p className="mb-4 rounded-lg bg-[#fff0ef] px-3 py-2 text-sm text-[#ff3b30]">{actionError}</p>
+        <p className="portal-alert portal-alert--error mb-4">{actionError}</p>
       )}
 
       {loading ? (
@@ -97,7 +97,7 @@ export default function WarrantyClaimListPage() {
             return (
               <button
                 type="button"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#ff3b30] hover:bg-[#fff0ef]"
+                className="portal-icon-btn portal-icon-btn--danger"
                 aria-label={t('common.delete')}
                 onClick={(e) => {
                   e.stopPropagation();

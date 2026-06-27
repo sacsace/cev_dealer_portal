@@ -66,7 +66,7 @@ export function ConfirmDialog({
           <div
             className={cn(
               'mb-4 flex h-11 w-11 items-center justify-center rounded-full',
-              variant === 'danger' ? 'bg-[#fff0ef] text-[#ff3b30]' : 'bg-[#e8f2ff] text-[var(--cev-blue)]',
+              variant === 'danger' ? 'portal-alert portal-alert--error' : 'bg-[rgba(140,198,63,0.12)] text-[var(--cev-green)]',
             )}
           >
             <AlertTriangle className="h-5 w-5" strokeWidth={1.75} />
@@ -80,12 +80,7 @@ export function ConfirmDialog({
         </div>
 
         <div className="flex justify-end gap-2 border-t border-[var(--border)] px-6 py-4">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading}
-            className="apple-btn-secondary text-sm font-medium disabled:opacity-45"
-          >
+          <button type="button" onClick={onCancel} disabled={loading} className="apple-btn apple-btn-secondary">
             {cancelLabel ?? t('common.cancel')}
           </button>
           <button
@@ -94,10 +89,8 @@ export function ConfirmDialog({
             onClick={onConfirm}
             disabled={loading}
             className={cn(
-              'text-sm font-medium transition-all disabled:opacity-45',
-              variant === 'danger'
-                ? 'inline-flex items-center justify-center rounded-full bg-[#ff3b30] px-5 py-2.5 text-white hover:bg-[#ff453a]'
-                : 'apple-btn-primary',
+              'apple-btn',
+              variant === 'danger' ? 'apple-btn-danger' : 'apple-btn-primary',
             )}
           >
             {loading ? t('common.loading') : (confirmLabel ?? t('common.delete'))}

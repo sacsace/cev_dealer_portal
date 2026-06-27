@@ -6,14 +6,10 @@ import {
   ShoppingBag,
   Search,
   Menu,
-  X,
-  ChevronRight,
   Wrench,
   Package,
   ClipboardList,
-  User,
   HelpCircle,
-  LogOut,
   Home,
   ShieldCheck,
 } from 'lucide-react';
@@ -21,15 +17,22 @@ import { cn } from '@/lib/utils';
 import { cartApi, logoutSession, refreshSession } from '@/lib/api';
 import { useEffect, useMemo, useState } from 'react';
 import type { ApiUser } from '@/lib/api';
-import { useI18n } from '@/components/providers/i18n-provider';
-import { LanguageSwitcher } from '@/components/ui/language-switcher';
-import { CevLogo, CEV_MOBILE_DRAWER_LOGO_HEIGHT, CEV_PORTAL_NAME, CEV_SIDEBAR_LOGO_HEIGHT } from '@/components/brand/cev-logo';
 import {
   buildDealerSearchUrl,
   getDealerSearchScope,
   getSearchPlaceholderKey,
 } from '@/lib/dealer-search';
-import { DealerAccountMenu } from '@/components/dealer/dealer-account-menu';
+import { useI18n } from '@/components/providers/i18n-provider';
+import { LanguageSwitcher } from '@/components/ui/language-switcher';
+import { CevLogo, CEV_MOBILE_DRAWER_LOGO_HEIGHT, CEV_PORTAL_NAME, CEV_SIDEBAR_LOGO_HEIGHT } from '@/components/brand/cev-logo';
+import { PortalAccountMenu } from '@/components/layout/portal-account-menu';
+import {
+  PortalHeaderIconButton,
+  PortalLogoutButton,
+  PortalMobileDrawer,
+  PortalMobileUserCard,
+  PortalSidebarAccountLink,
+} from '@/components/layout/portal-shell';
 
 type NavLinkItem = {
   key: string;
@@ -79,7 +82,7 @@ function matchNavHref(href: string, pathname: string, search: string) {
       );
     }
     if (path === '/orders') {
-      return !search;
+      return true;
     }
     return true;
   }
@@ -125,9 +128,6 @@ function DealerSidebarNav({
             items: [
               { key: 'cart', href: '/cart', labelKey: 'nav.cart', icon: ShoppingBag },
               { key: 'orders-all', href: '/orders', labelKey: 'nav.orderHistory', icon: ClipboardList },
-              { key: 'orders-pending', href: '/orders?status=SUBMITTED', labelKey: 'nav.pendingOrders', icon: ClipboardList, child: true },
-              { key: 'orders-approved', href: '/orders?status=APPROVED', labelKey: 'nav.approvedOrders', icon: ClipboardList, child: true },
-              { key: 'orders-shipped', href: '/orders?status=ORDER_SHIPPED', labelKey: 'nav.shippedOrders', icon: ClipboardList, child: true },
             ],
           },
         ],
@@ -268,35 +268,24 @@ export function DealerShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {user && (
-          <div className="border-t border-[var(--border)] p-3">
-            <Link
-              href="/account"
-              className="flex items-center gap-2.5 rounded-xl p-2 transition-colors hover:bg-black/[0.04]"
-            >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgba(0,174,239,0.1)] text-[var(--cev-blue)]">
-                <User className="h-3.5 w-3.5" strokeWidth={2} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-medium">{dealerName}</span>
-                <span className="block truncate text-[11px] text-[var(--text-tertiary)]">{t('nav.myAccount')}</span>
-              </span>
-              <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[var(--text-tertiary)]" />
-            </Link>
-          </div>
+          <PortalSidebarAccountLink
+            href="/account"
+            name={dealerName}
+            subtitle={t('nav.myAccount')}
+          />
         )}
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="apple-glass sticky top-0 z-40 border-b border-[var(--border)]">
           <div className="flex h-[52px] items-center gap-2.5 px-4 md:px-6">
-            <button
-              type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-black/[0.05] lg:hidden"
+            <PortalHeaderIconButton
               onClick={() => setMobileOpen(true)}
-              aria-label={t('nav.menu')}
+              ariaLabel={t('nav.menu')}
+              className="lg:hidden"
             >
               <Menu className="h-5 w-5" strokeWidth={1.75} />
-            </button>
+            </PortalHeaderIconButton>
 
             <div className="min-w-0 flex-1 lg:hidden">
               <p className="truncate text-[13px] font-semibold">{CEV_PORTAL_NAME}</p>
@@ -322,7 +311,17 @@ export function DealerShell({ children }: { children: React.ReactNode }) {
 
             <LanguageSwitcher />
 
-            {user && <DealerAccountMenu user={user} />}
+            {user ? (
+              <PortalAccountMenu
+                user={user}
+                accountHref="/account"
+                accountLabelKey="nav.myAccount"
+                primaryName={dealerName}
+                secondaryLine={t('nav.myAccount')}
+                accountIcon="user"
+                mobileBreakpoint="lg"
+              />
+            ) : null}
 
             <Link
               href="/cart"
@@ -374,64 +373,37 @@ export function DealerShell({ children }: { children: React.ReactNode }) {
         </footer>
       </div>
 
-      {mobileOpen && (
-        <div className="fixed inset-0 z-[60] lg:hidden">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <div className="dealer-sidebar absolute left-0 top-0 flex h-full w-[min(100%,300px)] flex-col bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-4">
-              <CevLogo href="/dealer" height={CEV_MOBILE_DRAWER_LOGO_HEIGHT} variant="sidebar" />
-              <button
-                type="button"
-                onClick={() => setMobileOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-black/[0.05]"
-                aria-label={t('nav.closeMenu')}
-              >
-                <X className="h-5 w-5" strokeWidth={1.75} />
-              </button>
-            </div>
-
-            {user && (
-              <div className="border-b border-[var(--border)] p-4">
-                <div className="flex items-center gap-3 rounded-xl p-2">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(0,174,239,0.1)] text-[var(--cev-blue)]">
-                    <User className="h-5 w-5" strokeWidth={1.75} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-[13px] font-medium">{dealerName}</span>
-                    <span className="block truncate text-[11px] text-[var(--text-tertiary)]">
-                      {user.dealer?.email ?? user.email}
-                    </span>
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <div className="flex-1 overflow-y-auto">
-              <DealerSidebarNav pathname={pathname} search={search} onNavigate={() => setMobileOpen(false)} />
-            </div>
-
-            <div className="space-y-2 border-t border-[var(--border)] p-4">
-              <form onSubmit={handleSearch} className="portal-search-input-wrap">
-                <Search className="portal-search-input-icon h-4 w-4" strokeWidth={1.75} />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t(headerPlaceholderKey)}
-                  className="apple-input w-full"
-                />
-              </form>
-              <button
-                type="button"
-                onClick={logout}
-                className="flex w-full items-center justify-center gap-2 rounded-full border border-[var(--border-strong)] py-2.5 text-[13px] font-medium text-[#ff3b30]"
-              >
-                <LogOut className="h-4 w-4" />
-                {t('common.logout')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <PortalMobileDrawer
+        open={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        drawerClassName="dealer-sidebar"
+        logo={<CevLogo href="/dealer" height={CEV_MOBILE_DRAWER_LOGO_HEIGHT} variant="sidebar" />}
+        userSection={
+          user ? (
+            <PortalMobileUserCard
+              name={dealerName}
+              subtitle={user.dealer?.email ?? user.email}
+            />
+          ) : null
+        }
+        footerClassName="space-y-2"
+        footer={
+          <>
+            <form onSubmit={handleSearch} className="portal-search-input-wrap">
+              <Search className="portal-search-input-icon h-4 w-4" strokeWidth={1.75} />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t(headerPlaceholderKey)}
+                className="apple-input w-full"
+              />
+            </form>
+            <PortalLogoutButton onClick={logout} />
+          </>
+        }
+      >
+        <DealerSidebarNav pathname={pathname} search={search} onNavigate={() => setMobileOpen(false)} />
+      </PortalMobileDrawer>
     </div>
   );
 }

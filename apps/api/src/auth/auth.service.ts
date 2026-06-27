@@ -2,6 +2,8 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  ForbiddenException,
+  ConflictException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -9,7 +11,7 @@ import * as bcrypt from 'bcryptjs';
 import { AuditAction, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../common/services/audit.service';
-import { ChangePasswordDto, LoginDto } from './dto/auth.dto';
+import { ChangePasswordDto, LoginDto, UpdateDealerProfileDto, UpdateProfileDto } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -111,6 +113,7 @@ export class AuthService {
       address?: string | null;
       city?: string | null;
       state?: string | null;
+      gstNumber?: string | null;
       contactPerson?: string | null;
     } | null;
   }) {
@@ -130,10 +133,125 @@ export class AuthService {
             address: user.dealer.address ?? null,
             city: user.dealer.city ?? null,
             state: user.dealer.state ?? null,
+            gstNumber: user.dealer.gstNumber ?? null,
             contactPerson: user.dealer.contactPerson ?? null,
           }
         : null,
     };
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto, ipAddress?: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.status !== 'ACTIVE') {
+      throw new UnauthorizedException();
+    }
+
+    if (dto.email && dto.email !== user.email) {
+      const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      if (existing && existing.id !== userId) {
+        throw new ConflictException('Email is already in use');
+      }
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.email !== undefined ? { email: dto.email } : {}),
+        ...(dto.mobile !== undefined ? { mobile: dto.mobile || null } : {}),
+      },
+      include: { dealer: true },
+    });
+
+    await this.audit.log({
+      userId,
+      userRole: user.role,
+      action: AuditAction.UPDATE,
+      module: 'AUTH',
+      targetId: userId,
+      ipAddress,
+    });
+
+    return this.toAuthUser(updated);
+  }
+
+  async updateDealerProfile(
+    userId: string,
+    dto: UpdateDealerProfileDto,
+    ipAddress?: string,
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { dealer: true },
+    });
+
+    if (!user || user.status !== 'ACTIVE') {
+      throw new UnauthorizedException();
+    }
+
+    if (user.role !== UserRole.DEALER || !user.dealerId || !user.dealer) {
+      throw new ForbiddenException('Dealer account required');
+    }
+
+    if (dto.email && dto.email !== user.dealer.email) {
+      const existingDealer = await this.prisma.dealer.findUnique({ where: { email: dto.email } });
+      if (existingDealer && existingDealer.id !== user.dealerId) {
+        throw new ConflictException('Email is already in use');
+      }
+
+      const existingUser = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      if (existingUser && existingUser.id !== userId) {
+        throw new ConflictException('Email is already in use');
+      }
+    }
+
+    const dealer = await this.prisma.dealer.update({
+      where: { id: user.dealerId },
+      data: {
+        ...(dto.dealerName !== undefined ? { dealerName: dto.dealerName } : {}),
+        ...(dto.email !== undefined ? { email: dto.email } : {}),
+        ...(dto.mobile !== undefined ? { mobile: dto.mobile || null } : {}),
+        ...(dto.address !== undefined ? { address: dto.address || null } : {}),
+        ...(dto.city !== undefined ? { city: dto.city || null } : {}),
+        ...(dto.state !== undefined ? { state: dto.state || null } : {}),
+        ...(dto.gstNumber !== undefined ? { gstNumber: dto.gstNumber || null } : {}),
+        ...(dto.contactPerson !== undefined ? { contactPerson: dto.contactPerson || null } : {}),
+      },
+    });
+
+    const userUpdate: {
+      name?: string;
+      email?: string;
+      mobile?: string | null;
+    } = {};
+
+    if (dto.dealerName !== undefined) userUpdate.name = dto.dealerName;
+    if (dto.email !== undefined) userUpdate.email = dto.email;
+    if (dto.mobile !== undefined) userUpdate.mobile = dto.mobile || null;
+
+    const updatedUser =
+      Object.keys(userUpdate).length > 0
+        ? await this.prisma.user.update({
+            where: { id: userId },
+            data: userUpdate,
+            include: { dealer: true },
+          })
+        : await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { dealer: true },
+          });
+
+    await this.audit.log({
+      userId,
+      userRole: user.role,
+      action: AuditAction.UPDATE,
+      module: 'DEALER',
+      targetId: dealer.id,
+      afterData: dealer,
+      ipAddress,
+    });
+
+    return this.toAuthUser(updatedUser!);
   }
 
   async refresh(refreshToken: string) {

@@ -72,7 +72,7 @@ export function LoginLegalLinks({
 
   const linkClass =
     variant === 'dark'
-      ? 'text-white/55 transition-colors hover:text-[var(--cev-blue)]'
+      ? 'text-white/55 transition-colors hover:text-[var(--cev-green)]'
       : 'text-[var(--text-tertiary)] transition-colors hover:text-[var(--accent)]';
 
   return (
@@ -98,9 +98,4 @@ export function LoginPageFooter() {
       <DeveloperCredit />
     </footer>
   );
-}
-
-/** @deprecated Use LoginPageFooter — kept as alias for compatibility */
-export function LoginFooter() {
-  return <LoginPageFooter />;
 }

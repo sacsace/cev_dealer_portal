@@ -33,18 +33,18 @@ export const Button = forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & {
     variant?: 'primary' | 'secondary' | 'danger' | 'outline';
+    size?: 'default' | 'lg';
   }
->(function Button({ children, variant = 'primary', className, ...props }, ref) {
+>(function Button({ children, variant = 'primary', size = 'default', className, ...props }, ref) {
   return (
     <button
       ref={ref}
       className={cn(
-        'text-sm font-medium transition-all disabled:opacity-45',
+        'apple-btn',
         variant === 'primary' && 'apple-btn-primary',
-        variant === 'secondary' && 'apple-btn-secondary',
-        variant === 'outline' && 'apple-btn-secondary',
-        variant === 'danger' &&
-          'inline-flex items-center justify-center rounded-full bg-[#ff3b30] px-5 py-2.5 text-white hover:bg-[#ff453a]',
+        (variant === 'secondary' || variant === 'outline') && 'apple-btn-secondary',
+        variant === 'danger' && 'apple-btn-danger',
+        size === 'lg' && 'apple-btn-lg',
         className,
       )}
       {...props}
@@ -69,11 +69,11 @@ export function Input({
       {label && (
         <span className="mb-1.5 block text-sm font-medium text-[var(--text-primary)]">
           {label}
-          {required && <span className="text-[#ff3b30]"> *</span>}
+          {required && <span className="text-[var(--danger)]"> *</span>}
         </span>
       )}
       <input className="apple-input" {...props} />
-      {error && <span className="mt-1 block text-xs text-[#ff3b30]">{error}</span>}
+      {error && <span className="mt-1 block text-xs text-[var(--danger)]">{error}</span>}
     </label>
   );
 }
@@ -92,7 +92,7 @@ export function Textarea({
       {label && (
         <span className="mb-1.5 block text-sm font-medium text-[var(--text-primary)]">
           {label}
-          {required && <span className="text-[#ff3b30]"> *</span>}
+          {required && <span className="text-[var(--danger)]"> *</span>}
         </span>
       )}
       <textarea className={cn('apple-input resize-y', className)} rows={3} {...props} />
@@ -114,7 +114,7 @@ export function Select({
       {label && (
         <span className="mb-1.5 block text-sm font-medium text-[var(--text-primary)]">
           {label}
-          {required && <span className="text-[#ff3b30]"> *</span>}
+          {required && <span className="text-[var(--danger)]"> *</span>}
         </span>
       )}
       <select className="apple-input" {...props}>
@@ -150,11 +150,12 @@ export function DataTable({
   const { t } = useI18n();
   const empty = emptyMessage ?? t('common.noRecords');
   const extraCols = (actions ? 1 : 0) + (selection ? 1 : 0);
+  const hasIndexCol = columns[0] === '#';
 
   return (
-    <div className="portal-data-table rounded-[var(--radius-md)] border border-[var(--border)] bg-white shadow-[var(--shadow-sm)]">
-      <div className="overflow-x-auto">
-      <table className="min-w-full text-sm">
+    <div className="portal-data-table w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-white shadow-[var(--shadow-sm)]">
+      <div className="w-full overflow-x-auto">
+      <table className="w-full min-w-full table-fixed text-sm">
           <thead>
             <tr className="border-b border-[var(--border)] bg-[var(--bg-secondary)]">
               {selection && (
@@ -167,20 +168,23 @@ export function DataTable({
                     }}
                     onChange={selection.onToggleAll}
                     aria-label={t('admin.selectAll')}
-                    className="h-4 w-4 rounded border-[var(--border-strong)] accent-[var(--cev-blue)]"
+                    className="h-4 w-4 rounded border-[var(--border-strong)] accent-[var(--cev-green)]"
                   />
                 </th>
               )}
-              {columns.map((col) => (
+              {columns.map((col, colIndex) => (
                 <th
                   key={col}
-                  className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]"
+                  className={cn(
+                    'px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]',
+                    hasIndexCol && colIndex === 0 && 'w-12',
+                  )}
                 >
                   {col}
                 </th>
               ))}
               {actions && (
-                <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
+                <th className="w-28 px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
                   {t('common.action')}
                 </th>
               )}
@@ -208,7 +212,7 @@ export function DataTable({
                     className={cn(
                       'border-b border-[var(--border)] last:border-0 transition-colors',
                       onRowClick && 'cursor-pointer hover:bg-[var(--bg-secondary)]/70',
-                      isSelected && 'bg-[rgba(0,174,239,0.06)]',
+                      isSelected && 'bg-[rgba(140,198,63,0.06)]',
                     )}
                   >
                     {selection && rowId && (
@@ -218,17 +222,27 @@ export function DataTable({
                           checked={selection.selectedIds.has(rowId)}
                           onChange={() => selection.onToggle(rowId)}
                           aria-label={t('admin.selectRow')}
-                          className="h-4 w-4 rounded border-[var(--border-strong)] accent-[var(--cev-blue)]"
+                          className="h-4 w-4 rounded border-[var(--border-strong)] accent-[var(--cev-green)]"
                         />
                       </td>
                     )}
                     {row.map((cell, j) => (
-                      <td key={j} className="px-4 py-3 text-[13px] text-[var(--text-primary)]">
-                        {cell}
+                      <td
+                        key={j}
+                        className={cn(
+                          'px-4 py-3 text-[13px] text-[var(--text-primary)]',
+                          hasIndexCol && j === 0 && 'w-12',
+                        )}
+                      >
+                        {typeof cell === 'string' || typeof cell === 'number' ? (
+                          <span className="block truncate">{cell}</span>
+                        ) : (
+                          cell
+                        )}
                       </td>
                     ))}
                     {actions && (
-                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <td className="w-28 px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         {actions(i)}
                       </td>
                     )}
@@ -247,31 +261,30 @@ export function StatusBadge({ status }: { status: string }) {
   const { t } = useI18n();
   const label = t(`status.${status}`) !== `status.${status}` ? t(`status.${status}`) : status.replace(/_/g, ' ');
 
-  const colors: Record<string, string> = {
-    CREATED: 'bg-[#f5f5f7] text-[#6e6e73]',
-    SUBMITTED: 'bg-[#e8f2ff] text-[#0071e3]',
-    APPROVED: 'bg-[#e8faf0] text-[#248a3d]',
-    REJECTED: 'bg-[#fff0ef] text-[#ff3b30]',
-    DRAFT: 'bg-[#fff8e6] text-[#b25000]',
-    ORDER_SHIPPED: 'bg-[#f3e8ff] text-[#8944ab]',
-    DELIVERED: 'bg-[#e8faf0] text-[#248a3d]',
-    ACTIVE: 'bg-[#e8faf0] text-[#248a3d]',
-    INACTIVE: 'bg-[#f5f5f7] text-[#6e6e73]',
+  const tones: Record<string, string> = {
+    CREATED: 'status-badge--neutral',
+    SUBMITTED: 'status-badge--info',
+    APPROVED: 'status-badge--success',
+    REJECTED: 'status-badge--danger',
+    DRAFT: 'status-badge--warning',
+    ORDER_SHIPPED: 'status-badge--purple',
+    DELIVERED: 'status-badge--success',
+    ACTIVE: 'status-badge--success',
+    INACTIVE: 'status-badge--neutral',
   };
 
   return (
-    <span
-      className={cn(
-        'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-        colors[status] ?? 'bg-[#f5f5f7] text-[#6e6e73]',
-      )}
-    >
+    <span className={cn('status-badge', tones[status] ?? 'status-badge--neutral')}>
       {label}
     </span>
   );
 }
 
+export { Alert, IconButton, KpiCard, SegmentedControl } from './portal-primitives';
+
 export { LanguageSwitcher } from './language-switcher';
 export { ConfirmDialog } from './confirm-dialog';
 export { useConfirmDialog } from './use-confirm-dialog';
 export { PortalSearchBar } from './portal-search-bar';
+export { PortalStatusTabs } from './portal-status-tabs';
+export type { StatusTab } from './portal-status-tabs';

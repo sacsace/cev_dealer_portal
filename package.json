@@ -22,7 +22,8 @@
     "db:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-db.ps1",
     "db:seed": "prisma db seed",
     "db:deploy": "prisma migrate deploy && npm run db:seed",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "icons:sync": "node scripts/sync-icons.js"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

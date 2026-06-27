@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Trash2 } from 'lucide-react';
 import { jobCardsApi, type JobCard } from '@/lib/api';
-import { DataTable, PageTitle, StatusBadge, useConfirmDialog } from '@/components/ui';
+import { Button, DataTable, PageTitle, StatusBadge, useConfirmDialog } from '@/components/ui';
+import { AdminActionAlert, AdminTableDeleteButton } from '@/components/admin/admin-list-tools';
 import { AdminPageBody, AdminSearchBar } from '@/components/admin/admin-page-shell';
 import { formatDate } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
@@ -60,9 +60,7 @@ export default function AdminJobCardsPage() {
         }}
       />
 
-      {actionError && (
-        <p className="mb-4 rounded-lg bg-[#fff0ef] px-3 py-2 text-sm text-[#ff3b30]">{actionError}</p>
-      )}
+      {actionError ? <AdminActionAlert message={actionError} /> : null}
 
       {loading ? (
         <p className="text-sm text-[var(--text-tertiary)]">{t('common.loading')}</p>
@@ -97,17 +95,12 @@ export default function AdminJobCardsPage() {
             if (!item) return null;
 
             return (
-              <button
-                type="button"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#ff3b30] hover:bg-[#fff0ef]"
-                aria-label={t('common.delete')}
-                onClick={(e) => {
-                  e.stopPropagation();
+              <AdminTableDeleteButton
+                stopPropagation
+                onClick={() => {
                   void handleDelete(item);
                 }}
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+              />
             );
           }}
         />

@@ -18,6 +18,7 @@ export interface ApiUser {
     city?: string | null;
     state?: string | null;
     contactPerson?: string | null;
+    gstNumber?: string | null;
   } | null;
 }
 
@@ -157,6 +158,18 @@ export const authApi = {
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
   me: () => apiFetch<ApiUser>('/auth/me'),
+  updateProfile: (data: { name?: string; email?: string; mobile?: string }) =>
+    apiFetch<ApiUser>('/auth/profile', { method: 'PATCH', body: JSON.stringify(data) }),
+  updateDealerProfile: (data: {
+    dealerName?: string;
+    email?: string;
+    mobile?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    gstNumber?: string;
+    contactPerson?: string;
+  }) => apiFetch<ApiUser>('/auth/dealer', { method: 'PATCH', body: JSON.stringify(data) }),
 };
 
 export const partsApi = {
