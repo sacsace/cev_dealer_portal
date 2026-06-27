@@ -1,5 +1,6 @@
 # Railway config for the **api** service.
 # Settings → Config-as-code → Config file path: railway.api.toml
+# IMPORTANT: no leading slash (NOT /railway.api.toml)
 
 [build]
 builder = "DOCKERFILE"
@@ -9,6 +10,8 @@ dockerfilePath = "Dockerfile.api"
 startCommand = "sh scripts/docker-api-entrypoint.sh"
 healthcheckPath = "/api"
 healthcheckTimeout = 180
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
 
 [variables]
 NODE_ENV = "production"
