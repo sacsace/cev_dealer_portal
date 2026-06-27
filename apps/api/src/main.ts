@@ -5,6 +5,29 @@ import { AppModule } from './app.module';
 import { validateEnv } from './common/utils/validate-env';
 import { getUploadRoot } from './common/utils/file-storage.util';
 
+function collectCorsOrigins(): string[] {
+  const origins = new Set<string>();
+  const frontend = process.env.FRONTEND_URL?.trim();
+  if (frontend) {
+    origins.add(frontend);
+    try {
+      const url = new URL(frontend);
+      const host = url.hostname;
+      const port = url.port ? `:${url.port}` : '';
+      if (host.startsWith('www.')) {
+        origins.add(`${url.protocol}//${host.slice(4)}${port}`);
+      } else {
+        origins.add(`${url.protocol}//www.${host}${port}`);
+      }
+    } catch {
+      // ignore invalid FRONTEND_URL
+    }
+  }
+  const extra = process.env.CORS_ORIGINS?.split(',').map((v) => v.trim()).filter(Boolean);
+  for (const origin of extra ?? []) origins.add(origin);
+  return [...origins];
+}
+
 async function bootstrap() {
   validateEnv();
 
@@ -14,8 +37,15 @@ async function bootstrap() {
   app.useStaticAssets(getUploadRoot(), {
     prefix: '/api/uploads/',
   });
+  const allowedOrigins = collectCorsOrigins();
   app.enableCors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

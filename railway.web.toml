@@ -1,5 +1,6 @@
 # Railway config for the **web** service.
 # Settings → Config-as-code → Config file path: railway.web.toml
+# IMPORTANT: no leading slash (NOT /railway.web.toml)
 
 [build]
 builder = "DOCKERFILE"

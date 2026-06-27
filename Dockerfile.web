@@ -9,8 +9,10 @@ ENV HOSTNAME=0.0.0.0
 # Railway injects service variables at build time when declared as ARG.
 ARG NEXT_PUBLIC_API_URL=http://localhost:3001/api
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ARG API_URL=
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ENV API_URL=$API_URL
 
 COPY package.json package-lock.json .npmrc ./
 COPY scripts/ensure-native-css-bindings.cjs scripts/

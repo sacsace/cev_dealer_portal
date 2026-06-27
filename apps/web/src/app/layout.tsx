@@ -5,6 +5,7 @@ import './globals.css';
 import Providers from './providers';
 import { SITE_URL } from '@/lib/seo';
 import { DEFAULT_LOCALE, translate } from '@/lib/i18n';
+import { getServerApiUrl } from '@/lib/env';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -73,8 +74,17 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  const runtimeApiUrl = getServerApiUrl();
+
   return (
     <html lang="en" className={`${inter.variable} ${notoSansKr.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.__CEV_API_URL__=${JSON.stringify(runtimeApiUrl)};`,
+          }}
+        />
+      </head>
       <body className="flex min-h-full flex-col">
         <Providers>{children}</Providers>
       </body>

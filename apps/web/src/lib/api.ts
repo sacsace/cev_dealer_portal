@@ -1,7 +1,5 @@
 import { getApiUrl } from '@/lib/env';
 
-const API_URL = getApiUrl();
-
 export interface ApiUser {
   id: string;
   name: string;
@@ -42,7 +40,7 @@ async function tryRefreshAccessToken(): Promise<boolean> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) return false;
 
-  const res = await fetch(`${API_URL}/auth/refresh`, {
+  const res = await fetch(`${getApiUrl()}/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken }),
@@ -70,7 +68,7 @@ export async function apiFetch<T>(
     (headers as Record<string, string>).Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const res = await fetch(`${getApiUrl()}${path}`, { ...options, headers });
 
   if (
     res.status === 401 &&
@@ -111,7 +109,7 @@ export async function apiUpload<T>(
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch(`${API_URL}${path}`, { method: 'POST', headers, body: formData });
+  const res = await fetch(`${getApiUrl()}${path}`, { method: 'POST', headers, body: formData });
 
   if (res.status === 401 && !retried && path !== '/auth/login' && path !== '/auth/refresh') {
     const refreshed = await tryRefreshAccessToken();
@@ -146,7 +144,7 @@ export const authApi = {
       body: JSON.stringify({ loginId, password }),
     }),
   refresh: (refreshToken: string) =>
-    fetch(`${API_URL}/auth/refresh`, {
+    fetch(`${getApiUrl()}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
@@ -466,7 +464,7 @@ export const reportsApi = {
     if (filters?.dealerId) params.set('dealerId', filters.dealerId);
 
     const token = getToken();
-    const res = await fetch(`${API_URL}/reports/export?${params}`, {
+    const res = await fetch(`${getApiUrl()}/reports/export?${params}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
 
