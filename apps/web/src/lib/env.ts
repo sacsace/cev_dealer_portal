@@ -13,9 +13,17 @@ export function publicEnv(name: string, fallback: string): string {
   return value ? value : fallback;
 }
 
+/** Ensure API base URL ends with `/api` (Nest global prefix). */
+export function normalizeApiUrl(raw: string): string {
+  const trimmed = raw.trim().replace(/\/+$/, '');
+  if (!trimmed) return LOCAL_API_URL;
+  if (trimmed.endsWith('/api')) return trimmed;
+  return `${trimmed}/api`;
+}
+
 /** Server-side API URL (runtime env API_URL, then build-time NEXT_PUBLIC_API_URL). */
 export function getServerApiUrl(): string {
-  return publicEnv('API_URL', publicEnv('NEXT_PUBLIC_API_URL', LOCAL_API_URL));
+  return normalizeApiUrl(publicEnv('API_URL', publicEnv('NEXT_PUBLIC_API_URL', LOCAL_API_URL)));
 }
 
 export function getSiteUrl(): string {
@@ -26,7 +34,7 @@ export function getSiteUrl(): string {
 export function getApiUrl(): string {
   if (typeof window !== 'undefined') {
     const runtime = window.__CEV_API_URL__?.trim();
-    if (runtime) return runtime;
+    if (runtime) return normalizeApiUrl(runtime);
   }
   return getServerApiUrl();
 }
