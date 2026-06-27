@@ -20,6 +20,9 @@ while ($jwtRefreshSecret -eq $jwtSecret) {
 }
 
 Write-Host 'Paste these into Railway -> api -> Variables:' -ForegroundColor Yellow
+Write-Host 'DATABASE_URL=${{Postgres.DATABASE_URL}}'
+Write-Host 'DIRECT_DATABASE_URL=${{Postgres.DATABASE_UNPOOLED_URL}}'
+Write-Host '(If DATABASE_UNPOOLED_URL is unavailable, set DIRECT_DATABASE_URL to the same Postgres reference as DATABASE_URL)'
 Write-Host "JWT_SECRET=$jwtSecret"
 Write-Host "JWT_REFRESH_SECRET=$jwtRefreshSecret"
 Write-Host ''

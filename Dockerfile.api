@@ -17,6 +17,7 @@ RUN env -u NPM_CONFIG_OMIT -u npm_config_omit -u NPM_CONFIG_PRODUCTION -u npm_co
 COPY prisma prisma
 COPY apps/api apps/api
 COPY scripts/docker-api-entrypoint.sh scripts/
+COPY scripts/verify-db-tables.js scripts/
 
 RUN chmod +x scripts/docker-api-entrypoint.sh \
   && npm run db:generate \
