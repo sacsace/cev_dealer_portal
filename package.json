@@ -29,6 +29,7 @@
     "@types/bcryptjs": "^2.4.6",
     "concurrently": "^9.1.2",
     "prisma": "^6.8.2",
+    "sharp": "^0.35.2",
     "tsx": "^4.19.4"
   },
   "dependencies": {

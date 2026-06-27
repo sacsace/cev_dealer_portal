@@ -57,9 +57,12 @@ export const metadata: Metadata = {
     description: siteDescription,
   },
   icons: {
-    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
-    apple: [{ url: '/apple-icon.svg', type: 'image/svg+xml' }],
-    shortcut: ['/favicon.svg'],
+    icon: [
+      { url: '/favicon.png', type: 'image/png', sizes: '48x48' },
+      { url: '/favicon-32.png', type: 'image/png', sizes: '32x32' },
+    ],
+    apple: [{ url: '/apple-icon.png', type: 'image/png', sizes: '180x180' }],
+    shortcut: ['/favicon.png'],
   },
 };
 
