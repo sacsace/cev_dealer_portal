@@ -152,6 +152,11 @@ a:focus:not(:focus-visible) {
   box-shadow: 0 0 0 4px rgba(140, 198, 63, 0.14);
 }
 
+.password-input-asterisk {
+  font-family: var(--font-inter), ui-monospace, monospace;
+  letter-spacing: 0.12em;
+}
+
 .portal-search-input-wrap {
   position: relative;
 }
@@ -1331,6 +1336,16 @@ a:focus:not(:focus-visible) {
   width: 100%;
 }
 
+.portal-page-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.portal-page-header > .portal-page-header-actions {
+  width: 100%;
+}
+
 .portal-page-header > :last-child:not(:first-child) .apple-btn,
 .portal-page-header > :last-child:not(:first-child) .apple-btn-primary,
 .portal-page-header > :last-child:not(:first-child) .apple-btn-secondary,
@@ -1340,7 +1355,8 @@ a:focus:not(:focus-visible) {
 }
 
 @media (min-width: 640px) {
-  .portal-page-header > :last-child:not(:first-child) {
+  .portal-page-header > :last-child:not(:first-child),
+  .portal-page-header > .portal-page-header-actions {
     width: auto;
   }
 
@@ -1584,6 +1600,15 @@ a:focus:not(:focus-visible) {
   height: 100%;
   flex-direction: column;
   padding: 1rem;
+}
+
+.parts-card--clickable {
+  cursor: pointer;
+}
+
+.parts-card--clickable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .parts-card.apple-card:hover {

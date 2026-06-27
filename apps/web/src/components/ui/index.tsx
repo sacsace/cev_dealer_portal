@@ -3,6 +3,7 @@
 import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
+import { PasswordInput } from './password-input';
 
 export function PageTitle({
   title,
@@ -21,21 +22,22 @@ export function PageTitle({
   );
 }
 
-export function Card({
-  children,
-  className,
-  hover = false,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  hover?: boolean;
-}) {
+export const Card = forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & {
+    hover?: boolean;
+  }
+>(function Card({ children, className, hover = false, ...props }, ref) {
   return (
-    <div className={cn('apple-card p-5', hover && 'hover:-translate-y-0.5', className)}>
+    <div
+      ref={ref}
+      className={cn('apple-card p-5', hover && 'hover:-translate-y-0.5', className)}
+      {...props}
+    >
       {children}
     </div>
   );
-}
+});
 
 export const Button = forwardRef<
   HTMLButtonElement,
@@ -66,12 +68,17 @@ export function Input({
   label,
   required,
   error,
+  type,
   ...props
 }: React.InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
   required?: boolean;
   error?: string;
 }) {
+  if (type === 'password') {
+    return <PasswordInput label={label} required={required} error={error} {...props} />;
+  }
+
   return (
     <label className="block">
       {label && (
@@ -80,7 +87,7 @@ export function Input({
           {required && <span className="text-[var(--danger)]"> *</span>}
         </span>
       )}
-      <input className="apple-input" {...props} />
+      <input className="apple-input" type={type} {...props} />
       {error && <span className="mt-1 block text-xs text-[var(--danger)]">{error}</span>}
     </label>
   );

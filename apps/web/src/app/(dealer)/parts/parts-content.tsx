@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { cartApi, lookupApi, partsApi, type Part, type Category, type VehicleModel } from '@/lib/api';
 import { Button, Card, DataTable, Input, PageTitle, Select, useAlertDialog } from '@/components/ui';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
+import { PartDetailDialog } from '@/components/dealer/part-detail-dialog';
 
 function StockBadge({ inStock, label }: { inStock: boolean; label: string }) {
   return (
@@ -19,6 +19,7 @@ function StockBadge({ inStock, label }: { inStock: boolean; label: string }) {
 function PartCard({
   part,
   onAddToCart,
+  onOpenDetail,
   detailLabel,
   cartLabel,
   availableLabel,
@@ -26,6 +27,7 @@ function PartCard({
 }: {
   part: Part;
   onAddToCart: (partId: string) => void;
+  onOpenDetail: (partId: string) => void;
   detailLabel: string;
   cartLabel: string;
   availableLabel: string;
@@ -34,7 +36,20 @@ function PartCard({
   const inStock = part.stockQuantity > 0;
 
   return (
-    <Card hover className="parts-card">
+    <Card
+      hover
+      className="parts-card parts-card--clickable"
+      onClick={() => onOpenDetail(part.id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpenDetail(part.id);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label={`${part.partName} ${detailLabel}`}
+    >
       <div className="parts-card-media">
         <span className="parts-card-media-code">{part.partNumber}</span>
       </div>
@@ -44,13 +59,11 @@ function PartCard({
         <span className="parts-card-price">{formatCurrency(Number(part.dealerPrice))}</span>
         <StockBadge inStock={inStock} label={inStock ? availableLabel : outOfStockLabel} />
       </div>
-      <div className="parts-card-actions">
-        <Link href={`/parts/${part.id}`}>
-          <Button variant="outline" className="w-full">
-            {detailLabel}
-          </Button>
-        </Link>
-        <Button className="w-full" onClick={() => onAddToCart(part.id)} disabled={!inStock}>
+      <div className="parts-card-actions" onClick={(e) => e.stopPropagation()}>
+        <Button type="button" variant="outline" className="w-full" onClick={() => onOpenDetail(part.id)}>
+          {detailLabel}
+        </Button>
+        <Button type="button" className="w-full" onClick={() => onAddToCart(part.id)} disabled={!inStock}>
           {cartLabel}
         </Button>
       </div>
@@ -71,6 +84,7 @@ export default function PartsPageContent() {
   const [categoryId, setCategoryId] = useState(searchParams.get('categoryId') ?? '');
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
+  const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
 
   const hasActiveFilters = Boolean(
     searchParams.get('search') || searchParams.get('modelId') || searchParams.get('categoryId'),
@@ -125,6 +139,10 @@ export default function PartsPageContent() {
     await alert({ message: t('common.addedToCart'), variant: 'success' });
   }
 
+  function openPartDetail(partId: string) {
+    setSelectedPartId(partId);
+  }
+
   const emptyMessage =
     searchParams.get('search')
       ? t('common.noSearchResults').replace('{query}', searchParams.get('search')!)
@@ -133,6 +151,7 @@ export default function PartsPageContent() {
   return (
     <div className="w-full min-w-0">
       {alertDialog}
+      <PartDetailDialog partId={selectedPartId} onClose={() => setSelectedPartId(null)} />
       <div className="parts-page-shell">
         <div className="parts-page-heading">
           <PageTitle title={t('parts.title')} subtitle={t('parts.subtitle')} className="mb-0" />
@@ -209,6 +228,7 @@ export default function PartsPageContent() {
                   key={part.id}
                   part={part}
                   onAddToCart={addToCart}
+                  onOpenDetail={openPartDetail}
                   detailLabel={t('parts.detail')}
                   cartLabel={t('parts.addToCart')}
                   availableLabel={t('common.available')}
@@ -224,6 +244,7 @@ export default function PartsPageContent() {
                     key={part.id}
                     part={part}
                     onAddToCart={addToCart}
+                    onOpenDetail={openPartDetail}
                     detailLabel={t('parts.detail')}
                     cartLabel={t('parts.addToCart')}
                     availableLabel={t('common.available')}
@@ -234,6 +255,11 @@ export default function PartsPageContent() {
 
               <Card className="parts-desktop-table parts-list-table overflow-hidden p-0">
                 <DataTable
+                  rowIds={parts.map((part) => part.id)}
+                  onRowClick={(index) => {
+                    const part = parts[index];
+                    if (part) openPartDetail(part.id);
+                  }}
                   columns={[
                     t('parts.partNo'),
                     t('parts.partName'),
@@ -257,9 +283,14 @@ export default function PartsPageContent() {
                     if (!part) return null;
 
                     return (
-                      <Button onClick={() => addToCart(part.id)} disabled={part.stockQuantity <= 0}>
-                        {t('common.add')}
-                      </Button>
+                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                        <Button type="button" variant="outline" onClick={() => openPartDetail(part.id)}>
+                          {t('parts.detail')}
+                        </Button>
+                        <Button type="button" onClick={() => addToCart(part.id)} disabled={part.stockQuantity <= 0}>
+                          {t('common.add')}
+                        </Button>
+                      </div>
                     );
                   }}
                 />

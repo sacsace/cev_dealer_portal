@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,9 +9,14 @@ import {
   Put,
   Query,
   Req,
+  Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import type { Request } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Request, Response } from 'express';
+import { memoryStorage } from 'multer';
 import { UserRole, PermissionModule, PermissionAction } from '@prisma/client';
 import { DealersService } from './dealers.service';
 import { CreateDealerDto, UpdateDealerDto } from './dto/dealer.dto';
@@ -42,6 +48,39 @@ export class DealersController {
   @RequirePermission(PermissionModule.DEALER, PermissionAction.CREATE)
   getNextCode() {
     return this.dealersService.getNextDealerCode();
+  }
+
+  @Get('bulk-template')
+  @Roles(UserRole.ROOT, UserRole.ADMIN)
+  @RequirePermission(PermissionModule.DEALER, PermissionAction.CREATE)
+  async bulkTemplate(@Res() res: Response) {
+    const buffer = await this.dealersService.buildBulkTemplate();
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename="cev-dealer-bulk-template.xlsx"');
+    res.send(buffer);
+  }
+
+  @Post('bulk')
+  @Roles(UserRole.ROOT, UserRole.ADMIN)
+  @RequirePermission(PermissionModule.DEALER, PermissionAction.CREATE)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  bulkImport(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: { sub: string; role: UserRole },
+    @Req() req: Request,
+  ) {
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('Excel file is required');
+    }
+    return this.dealersService.bulkImport(file.buffer, user, req.ip);
   }
 
   @Get(':id')

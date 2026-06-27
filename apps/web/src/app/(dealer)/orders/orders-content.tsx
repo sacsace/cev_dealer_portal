@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ordersApi, type Order } from '@/lib/api';
-import { Card, DataTable, PageTitle, PortalSearchBar, PortalStatusTabs, StatusBadge } from '@/components/ui';
+import { Card, DataTable, PageTitle, PortalSearchBar, PortalStatusTabs, StatusBadge, Button } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
 
@@ -95,6 +95,7 @@ export default function OrdersPageContent() {
             t('orders.qty'),
             t('orders.amount'),
             t('orders.status'),
+            t('orders.proformaInvoice'),
             t('orders.track'),
           ]}
           rows={orders.map((order, i) => [
@@ -105,6 +106,18 @@ export default function OrdersPageContent() {
             order.items.reduce((s, item) => s + item.quantity, 0),
             formatCurrency(Number(order.grandTotal)),
             <StatusBadge key={order.id} status={order.status} />,
+            <Button
+              key={`${order.id}-invoice`}
+              type="button"
+              variant="outline"
+              className="!min-h-8 !px-3 !py-1.5 !text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                ordersApi.downloadProformaInvoice(order.id).catch(() => undefined);
+              }}
+            >
+              {order.invoice?.invoiceNo ?? t('orders.downloadProforma')}
+            </Button>,
             order.shipment?.trackingNo ?? '—',
           ])}
         />

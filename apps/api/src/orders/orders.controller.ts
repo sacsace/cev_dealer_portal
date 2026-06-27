@@ -7,9 +7,10 @@ import {
   Put,
   Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { OrderStatus, UserRole, PermissionModule, PermissionAction } from '@prisma/client';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto, RejectOrderDto, ShipOrderDto, UpdateShipmentDto } from './dto/order.dto';
@@ -35,6 +36,19 @@ export class OrdersController {
     @Query('search') search?: string,
   ) {
     return this.ordersService.findAll(user, +page, +limit, status, search);
+  }
+
+  @Get(':id/proforma-invoice')
+  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER, UserRole.DEALER)
+  async downloadProformaInvoice(
+    @Param('id') id: string,
+    @CurrentUser() user: { role: UserRole; dealerId?: string },
+    @Res() res: Response,
+  ) {
+    const { buffer, invoiceNo } = await this.ordersService.getProformaInvoiceFile(id, user);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${invoiceNo}.pdf"`);
+    res.send(buffer);
   }
 
   @Get(':id')

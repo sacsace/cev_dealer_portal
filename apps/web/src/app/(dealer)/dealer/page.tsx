@@ -5,12 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowRight,
-  Car,
-  ClipboardList,
-  Package,
   Search,
   ShoppingBag,
-  Tags,
   Wrench,
 } from 'lucide-react';
 import { lookupApi, partsApi, refreshSession, type ApiUser, type Category, type Part, type VehicleModel } from '@/lib/api';
@@ -54,12 +50,6 @@ export default function DealerHomePage() {
       cta: t('home.viewAllParts'),
       tone: 'parts' as const,
     },
-  ];
-
-  const quickSearchItems = [
-    { href: '/parts?by=vehicle', icon: Car, label: t('nav.searchByVehicle') },
-    { href: '/parts?by=model', icon: Package, label: t('nav.searchByModel') },
-    { href: '/parts?by=category', icon: Tags, label: t('nav.searchByCategory') },
   ];
 
   function handleSearch(e: React.FormEvent) {
@@ -133,30 +123,6 @@ export default function DealerHomePage() {
             </div>
           </Link>
         ))}
-      </section>
-
-      <section className="rounded-[var(--radius-md)] border border-[var(--border)] bg-white p-5 shadow-[var(--shadow-sm)] md:p-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-[15px] font-semibold text-[var(--text-primary)]">{t('home.quickSearch')}</h2>
-          <Link href="/repair/job-cards" className="inline-flex items-center gap-1 text-[13px] font-medium text-[var(--text-secondary)] hover:text-[var(--accent)]">
-            <ClipboardList className="h-4 w-4" strokeWidth={1.75} />
-            {t('home.goToJobCards')}
-          </Link>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {quickSearchItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-secondary)]/60 px-4 py-3.5 transition-colors hover:border-[rgba(140,198,63,0.25)] hover:bg-white"
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[var(--accent)] shadow-[var(--shadow-sm)]">
-                <item.icon className="h-4 w-4" strokeWidth={1.75} />
-              </span>
-              <span className="text-[14px] font-medium text-[var(--text-primary)]">{item.label}</span>
-            </Link>
-          ))}
-        </div>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">

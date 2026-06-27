@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { partsApi, type Part } from '@/lib/api';
 import { Button, DataTable, PageTitle, StatusBadge, useConfirmDialog } from '@/components/ui';
 import { AdminActionAlert, AdminBulkSelectionBar, AdminTableDeleteButton } from '@/components/admin/admin-list-tools';
+import { PartBulkImportDialog } from '@/components/admin/part-bulk-import-dialog';
 import { AdminPageBody, AdminSearchBar } from '@/components/admin/admin-page-shell';
 import { formatCurrency } from '@/lib/utils';
 import { useTableSelection } from '@/hooks/use-table-selection';
@@ -20,6 +21,7 @@ export default function AdminPartsPage() {
   const [loading, setLoading] = useState(true);
     const [actionError, setActionError] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const { selectedIds, setSelectedIds, selection } = useTableSelection(parts);
 
   const load = useCallback(async (q = search) => {
@@ -88,9 +90,14 @@ export default function AdminPartsPage() {
     <AdminPageBody>
       <div className="portal-page-header">
         <PageTitle title={t('admin.partsMgmt')} subtitle={t('admin.partsSubtitle')} />
-        <Link href="/admin/parts/new">
-          <Button>{t('admin.productRegister')}</Button>
-        </Link>
+        <div className="portal-page-header-actions">
+          <Button type="button" variant="outline" onClick={() => setBulkOpen(true)}>
+            {t('admin.partBulkRegister')}
+          </Button>
+          <Link href="/admin/parts/new">
+            <Button>{t('admin.productRegister')}</Button>
+          </Link>
+        </div>
       </div>
 
       <AdminSearchBar
@@ -146,6 +153,11 @@ export default function AdminPartsPage() {
         />
       )}
       {confirmDialog}
+      <PartBulkImportDialog
+        open={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        onImported={() => load(search)}
+      />
     </AdminPageBody>
   );
 }

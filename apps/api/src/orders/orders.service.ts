@@ -1,14 +1,15 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { AuditAction, OrderStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../common/services/audit.service';
 import { CartService } from '../cart/cart.service';
+import { getUploadRoot } from '../common/utils/file-storage.util';
 import { CreateOrderDto, RejectOrderDto, ShipOrderDto, UpdateShipmentDto } from './dto/order.dto';
+import {
+  buildProformaInvoiceNo,
+  generateProformaInvoicePdf,
+  saveProformaInvoicePdf,
+} from './proforma-invoice.util';
 
 @Injectable()
 export class OrdersService {
@@ -127,6 +128,8 @@ export class OrdersService {
 
     await this.prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
 
+    await this.createProformaInvoice(order.id);
+
     await this.audit.log({
       userId: user.sub,
       userRole: user.role,
@@ -137,7 +140,66 @@ export class OrdersService {
       ipAddress: ip,
     });
 
-    return order;
+    return this.findOne(order.id, user);
+  }
+
+  async createProformaInvoice(orderId: string) {
+    const existing = await this.prisma.invoice.findUnique({ where: { orderId } });
+    if (existing) return existing;
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { dealer: true, items: true },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+
+    const invoiceNo = buildProformaInvoiceNo(order.orderNo);
+    const pdfBuffer = await generateProformaInvoicePdf(order, invoiceNo);
+    const { fileUrl } = await saveProformaInvoicePdf(orderId, pdfBuffer);
+
+    return this.prisma.invoice.create({
+      data: {
+        orderId,
+        invoiceNo,
+        invoiceUrl: fileUrl,
+        invoiceAmount: order.grandTotal,
+      },
+    });
+  }
+
+  async getProformaInvoiceFile(
+    id: string,
+    user: { role: UserRole; dealerId?: string },
+  ): Promise<{ buffer: Buffer; invoiceNo: string }> {
+    await this.findOne(id, user);
+
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: { dealer: true, items: true, invoice: true },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+
+    const invoiceNo = order.invoice?.invoiceNo ?? buildProformaInvoiceNo(order.orderNo);
+    const pdfBuffer = await generateProformaInvoicePdf(order, invoiceNo);
+    const { fileUrl } = await saveProformaInvoicePdf(id, pdfBuffer);
+
+    if (order.invoice) {
+      await this.prisma.invoice.update({
+        where: { orderId: id },
+        data: { invoiceUrl: fileUrl, invoiceAmount: order.grandTotal },
+      });
+    } else {
+      await this.prisma.invoice.create({
+        data: {
+          orderId: id,
+          invoiceNo,
+          invoiceUrl: fileUrl,
+          invoiceAmount: order.grandTotal,
+        },
+      });
+    }
+
+    return { buffer: pdfBuffer, invoiceNo };
   }
 
   async approve(id: string, actor: { sub: string; role: UserRole }, ip?: string) {

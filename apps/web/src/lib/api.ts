@@ -181,6 +181,26 @@ export const partsApi = {
   update: (id: string, data: UpdatePartPayload) =>
     apiFetch<Part>(`/parts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   remove: (id: string) => apiFetch<{ message: string }>(`/parts/${id}`, { method: 'DELETE' }),
+  downloadBulkTemplate: async () => {
+    const token = getToken();
+    const res = await fetch(`${getApiUrl()}/parts/bulk-template`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message ?? 'Download failed');
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'cev-part-bulk-template.xlsx';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  },
+  bulkImport: (file: File) => apiUpload<PartBulkImportResult>('/parts/bulk', file),
 };
 
 export const dealersApi = {
@@ -195,6 +215,26 @@ export const dealersApi = {
   update: (id: string, data: UpdateDealerPayload) =>
     apiFetch<Dealer>(`/dealers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   remove: (id: string) => apiFetch<{ message: string }>(`/dealers/${id}`, { method: 'DELETE' }),
+  downloadBulkTemplate: async () => {
+    const token = getToken();
+    const res = await fetch(`${getApiUrl()}/dealers/bulk-template`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message ?? 'Download failed');
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'cev-dealer-bulk-template.xlsx';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  },
+  bulkImport: (file: File) => apiUpload<DealerBulkImportResult>('/dealers/bulk', file),
 };
 
 export const usersApi = {
@@ -234,6 +274,28 @@ export const ordersApi = {
   get: (id: string) => apiFetch<Order>(`/orders/${id}`),
   create: (data: Record<string, string | number>) =>
     apiFetch<Order>('/orders', { method: 'POST', body: JSON.stringify(data) }),
+  downloadProformaInvoice: async (id: string) => {
+    const token = getToken();
+    const res = await fetch(`${getApiUrl()}/orders/${id}/proforma-invoice`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: res.statusText }));
+      throw new Error(error.message ?? 'Download failed');
+    }
+
+    const blob = await res.blob();
+    const invoiceNo =
+      res.headers.get('Content-Disposition')?.match(/filename="?([^";]+)"?/)?.[1] ??
+      `proforma-${id}.pdf`;
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = invoiceNo.endsWith('.pdf') ? invoiceNo : `${invoiceNo}.pdf`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  },
   approve: (id: string) => apiFetch<Order>(`/orders/${id}/approve`, { method: 'PUT' }),
   reject: (id: string, reason?: string) =>
     apiFetch<Order>(`/orders/${id}/reject`, {
@@ -574,6 +636,16 @@ export interface CreateDealerPayload {
   status?: string;
 }
 
+export interface DealerBulkImportResult {
+  created: number;
+  failed: Array<{ row: number; dealerName?: string; error: string }>;
+}
+
+export interface PartBulkImportResult {
+  created: number;
+  failed: Array<{ row: number; partNumber?: string; error: string }>;
+}
+
 export type UpdateDealerPayload = Partial<Omit<CreateDealerPayload, 'dealerCode'>>;
 
 export interface StaffUser {
@@ -620,6 +692,14 @@ export interface OrderShipment {
   deliveryDate?: string;
 }
 
+export interface OrderInvoice {
+  id: string;
+  invoiceNo: string;
+  invoiceUrl?: string;
+  invoiceAmount?: number | string;
+  createdAt?: string;
+}
+
 export interface Order {
   id: string;
   orderNo: string;
@@ -637,6 +717,7 @@ export interface Order {
   items: OrderItem[];
   dealer?: { dealerName: string; dealerCode: string };
   shipment?: OrderShipment;
+  invoice?: OrderInvoice | null;
 }
 
 export interface JobCardFile {

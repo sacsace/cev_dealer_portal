@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { dealersApi, type Dealer } from '@/lib/api';
 import { Button, DataTable, PageTitle, StatusBadge, useConfirmDialog } from '@/components/ui';
 import { AdminActionAlert, AdminBulkSelectionBar, AdminTableDeleteButton } from '@/components/admin/admin-list-tools';
+import { DealerBulkImportDialog } from '@/components/admin/dealer-bulk-import-dialog';
 import { AdminPageBody, AdminSearchBar } from '@/components/admin/admin-page-shell';
 import { useTableSelection } from '@/hooks/use-table-selection';
 import { formatDate } from '@/lib/utils';
@@ -20,6 +21,7 @@ export default function AdminDealersPage() {
   const [loading, setLoading] = useState(true);
   const [actionError, setActionError] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const { selectedIds, setSelectedIds, selection } = useTableSelection(dealers);
 
   const load = useCallback(async (q = search) => {
@@ -88,9 +90,14 @@ export default function AdminDealersPage() {
     <AdminPageBody>
       <div className="portal-page-header">
         <PageTitle title={t('admin.dealerMgmt')} subtitle={t('admin.dealerSubtitle')} />
-        <Link href="/admin/dealers/new">
-          <Button>{t('admin.dealerRegister')}</Button>
-        </Link>
+        <div className="portal-page-header-actions">
+          <Button type="button" variant="outline" onClick={() => setBulkOpen(true)}>
+            {t('admin.dealerBulkRegister')}
+          </Button>
+          <Link href="/admin/dealers/new">
+            <Button>{t('admin.dealerRegister')}</Button>
+          </Link>
+        </div>
       </div>
 
       <AdminSearchBar
@@ -147,6 +154,11 @@ export default function AdminDealersPage() {
         />
       )}
       {confirmDialog}
+      <DealerBulkImportDialog
+        open={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        onImported={() => load(search)}
+      />
     </AdminPageBody>
   );
 }

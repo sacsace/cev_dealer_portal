@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,9 +9,14 @@ import {
   Put,
   Query,
   Req,
+  Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import type { Request } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Request, Response } from 'express';
+import { memoryStorage } from 'multer';
 import { UserRole, PermissionModule, PermissionAction } from '@prisma/client';
 import { PartsService } from './parts.service';
 import { CreatePartDto, PartSearchQuery, UpdatePartDto } from './dto/part.dto';
@@ -30,6 +36,41 @@ export class PartsController {
   @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER, UserRole.DEALER)
   findAll(@Query() query: PartSearchQuery) {
     return this.partsService.findAll(query);
+  }
+
+  @Get('bulk-template')
+  @UseGuards(PermissionsGuard)
+  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @RequirePermission(PermissionModule.PARTS, PermissionAction.CREATE)
+  async bulkTemplate(@Res() res: Response) {
+    const buffer = await this.partsService.buildBulkTemplate();
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename="cev-part-bulk-template.xlsx"');
+    res.send(buffer);
+  }
+
+  @Post('bulk')
+  @UseGuards(PermissionsGuard)
+  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @RequirePermission(PermissionModule.PARTS, PermissionAction.CREATE)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  bulkImport(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: { sub: string; role: UserRole },
+    @Req() req: Request,
+  ) {
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('Excel file is required');
+    }
+    return this.partsService.bulkImport(file.buffer, user, req.ip);
   }
 
   @Get(':id')
@@ -73,13 +114,5 @@ export class PartsController {
     @Req() req: Request,
   ) {
     return this.partsService.remove(id, user, req.ip);
-  }
-
-  @Post('bulk-upload')
-  @UseGuards(PermissionsGuard)
-  @Roles(UserRole.ROOT, UserRole.ADMIN)
-  @RequirePermission(PermissionModule.PARTS, PermissionAction.CREATE)
-  bulkUpload() {
-    return { message: 'Bulk upload endpoint - Phase 3 implementation' };
   }
 }

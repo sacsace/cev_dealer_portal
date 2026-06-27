@@ -27,7 +27,12 @@ export default function CheckoutPage() {
   }, [router]);
 
   async function placeOrder() {
-    await ordersApi.create(form);
+    const order = await ordersApi.create(form);
+    try {
+      await ordersApi.downloadProformaInvoice(order.id);
+    } catch {
+      // Order succeeded even if PDF download fails in the browser.
+    }
     await alert({ message: t('common.orderPlaced'), variant: 'success' });
     router.push('/orders');
   }

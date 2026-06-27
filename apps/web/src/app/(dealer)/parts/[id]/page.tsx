@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { useParams, useSearchParams } from 'next/navigation';
 import { cartApi, partsApi, type Part } from '@/lib/api';
 import { Button, Card, PageTitle, useAlertDialog } from '@/components/ui';
 import { formatCurrency } from '@/lib/utils';
@@ -11,8 +12,21 @@ export default function PartDetailPage() {
   const { t } = useI18n();
   const { alert, alertDialog } = useAlertDialog();
   const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const [part, setPart] = useState<Part | null>(null);
   const [qty, setQty] = useState(1);
+
+  const backHref = (() => {
+    const params = new URLSearchParams();
+    const search = searchParams.get('search');
+    const modelId = searchParams.get('modelId');
+    const categoryId = searchParams.get('categoryId');
+    if (search) params.set('search', search);
+    if (modelId) params.set('modelId', modelId);
+    if (categoryId) params.set('categoryId', categoryId);
+    const qs = params.toString();
+    return qs ? `/parts?${qs}` : '/parts';
+  })();
 
   useEffect(() => {
     if (id) partsApi.get(id).then(setPart).catch(() => {});
@@ -26,7 +40,8 @@ export default function PartDetailPage() {
   }
 
   const rows = [
-    [t('parts.category'), part.category?.name],
+    [t('parts.partNo'), part.partNumber],
+    [t('parts.category'), part.category?.name ?? '—'],
     [t('parts.mrp'), formatCurrency(Number(part.mrp))],
     [t('parts.dealerPrice'), formatCurrency(Number(part.dealerPrice))],
     [t('parts.gst'), `${part.gstRate}%`],
@@ -38,6 +53,14 @@ export default function PartDetailPage() {
   return (
     <div>
       {alertDialog}
+      <div className="mb-4">
+        <Link
+          href={backHref}
+          className="inline-flex text-[13px] font-medium text-[var(--accent)] hover:underline"
+        >
+          ← {t('common.back')}
+        </Link>
+      </div>
       <PageTitle title={part.partName} subtitle={part.partNumber} />
       <div className="grid gap-8 md:grid-cols-2">
         <Card>
