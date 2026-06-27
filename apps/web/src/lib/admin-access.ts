@@ -4,6 +4,24 @@ import type { UserRole } from './auth';
 /** Nav item keys visible to USER (dashboard is always shown separately). */
 export const USER_ALLOWED_NAV_ITEM_KEYS = ['orders', 'job-cards', 'reports'] as const;
 
+/**
+ * Nav item keys visible to ADMIN (dashboard shown separately).
+ * ROOT sees all items including `users`.
+ */
+export const ADMIN_ALLOWED_NAV_ITEM_KEYS = [
+  'dealers',
+  'catalog-register',
+  'parts',
+  'models',
+  'fitments',
+  'orders',
+  'job-cards',
+  'problem-types',
+  'types',
+  'claims',
+  'reports',
+] as const;
+
 const USER_ALLOWED_PATH_PREFIXES = [
   '/admin/account',
   '/admin/orders',
@@ -11,8 +29,30 @@ const USER_ALLOWED_PATH_PREFIXES = [
   '/admin/reports',
 ];
 
+const ADMIN_ALLOWED_PATH_PREFIXES = [
+  '/admin/account',
+  '/admin/dealers',
+  '/admin/catalog',
+  '/admin/parts',
+  '/admin/models',
+  '/admin/fitments',
+  '/admin/orders',
+  '/admin/job-cards',
+  '/admin/problem-types',
+  '/admin/types',
+  '/admin/claims',
+  '/admin/reports',
+];
+
 function isStaffRole(role: UserRole | string | null | undefined): role is 'ROOT' | 'ADMIN' | 'USER' {
   return role === 'ROOT' || role === 'ADMIN' || role === 'USER';
+}
+
+function isAllowedNavItemKey(role: 'ADMIN' | 'USER', itemKey: string): boolean {
+  if (role === 'ADMIN') {
+    return (ADMIN_ALLOWED_NAV_ITEM_KEYS as readonly string[]).includes(itemKey);
+  }
+  return (USER_ALLOWED_NAV_ITEM_KEYS as readonly string[]).includes(itemKey);
 }
 
 export function canAccessAdminNavItem(
@@ -20,16 +60,17 @@ export function canAccessAdminNavItem(
   itemKey: string,
 ): boolean {
   if (!isStaffRole(role)) return false;
-  if (role === 'ROOT' || role === 'ADMIN') return true;
-  return (USER_ALLOWED_NAV_ITEM_KEYS as readonly string[]).includes(itemKey);
+  if (role === 'ROOT') return true;
+  if (role === 'ADMIN' || role === 'USER') return isAllowedNavItemKey(role, itemKey);
+  return false;
 }
 
 export function filterAdminNavGroups(
   role: UserRole | string | null | undefined,
   groups: AdminNavGroup[],
 ): AdminNavGroup[] {
-  if (role === 'ROOT' || role === 'ADMIN') return groups;
-  if (role !== 'USER') return [];
+  if (role === 'ROOT') return groups;
+  if (role !== 'ADMIN' && role !== 'USER') return [];
 
   return groups
     .map((group) => ({
@@ -41,11 +82,22 @@ export function filterAdminNavGroups(
 
 export function canAccessAdminPath(role: UserRole | string | null | undefined, path: string): boolean {
   if (!isStaffRole(role)) return false;
-  if (role === 'ROOT' || role === 'ADMIN') return true;
+  if (role === 'ROOT') return true;
   if (path === '/admin') return true;
+
+  if (role === 'ADMIN') {
+    return ADMIN_ALLOWED_PATH_PREFIXES.some(
+      (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+    );
+  }
+
   return USER_ALLOWED_PATH_PREFIXES.some(
     (prefix) => path === prefix || path.startsWith(`${prefix}/`),
   );
+}
+
+export function canManageStaffUsers(role: UserRole | string | null | undefined): boolean {
+  return role === 'ROOT';
 }
 
 export function canViewAdminOrganizationStats(role: UserRole | string | null | undefined): boolean {

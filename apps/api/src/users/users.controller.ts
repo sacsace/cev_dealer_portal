@@ -25,7 +25,7 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Get()
-  @Roles(UserRole.ROOT, UserRole.ADMIN)
+  @Roles(UserRole.ROOT)
   findAll(
     @Query('page') page = '1',
     @Query('limit') limit = '20',
@@ -35,13 +35,13 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ROOT, UserRole.ADMIN)
+  @Roles(UserRole.ROOT)
   findOne(@Param('id') id: string) {
     return this.usersService.findOneStaff(id);
   }
 
   @Post()
-  @Roles(UserRole.ROOT, UserRole.ADMIN)
+  @Roles(UserRole.ROOT)
   create(
     @Body() dto: CreateStaffUserDto,
     @CurrentUser() user: { sub: string; role: UserRole },
@@ -51,7 +51,7 @@ export class UsersController {
   }
 
   @Put(':id')
-  @Roles(UserRole.ROOT, UserRole.ADMIN)
+  @Roles(UserRole.ROOT)
   update(
     @Param('id') id: string,
     @Body() dto: UpdateStaffUserDto,
@@ -62,7 +62,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ROOT, UserRole.ADMIN)
+  @Roles(UserRole.ROOT)
   remove(
     @Param('id') id: string,
     @CurrentUser() user: { sub: string; role: UserRole },
