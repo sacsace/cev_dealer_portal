@@ -63,7 +63,8 @@ export default function OrdersPageContent() {
       ) : orders.length === 0 ? (
         <p className="text-sm text-[var(--text-secondary)]">{t('orders.empty')}</p>
       ) : (
-        <DataTable
+        <div className="dealer-orders-table">
+          <DataTable
           rowIds={orders.map((order) => order.id)}
           onRowClick={(index) => {
             const order = orders[index];
@@ -110,7 +111,8 @@ export default function OrdersPageContent() {
               {order.shipment?.trackingNo ?? '—'}
             </span>,
           ])}
-        />
+          />
+        </div>
       )}
     </div>
   );

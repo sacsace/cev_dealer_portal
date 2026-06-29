@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { cartApi, lookupApi, partsApi, type Part, type Category, type VehicleModel } from '@/lib/api';
 import { getPartImageUrl } from '@/lib/part-image';
-import { Button, Card, DataTable, Input, PageTitle, Select, useAlertDialog } from '@/components/ui';
+import { Button, Card, DataTable, Input, PageTitle, useAlertDialog } from '@/components/ui';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
 
@@ -32,7 +32,6 @@ function PartCard({
   part,
   onAddToCart,
   onOpenDetail,
-  detailLabel,
   cartLabel,
   availableLabel,
   outOfStockLabel,
@@ -40,11 +39,11 @@ function PartCard({
   part: Part;
   onAddToCart: (partId: string) => void;
   onOpenDetail: (partId: string) => void;
-  detailLabel: string;
   cartLabel: string;
   availableLabel: string;
   outOfStockLabel: string;
 }) {
+  const { t } = useI18n();
   const inStock = part.stockQuantity > 0;
   const imageUrl = getPartImageUrl(part);
 
@@ -61,7 +60,7 @@ function PartCard({
       }}
       role="button"
       tabIndex={0}
-      aria-label={`${part.partName} ${detailLabel}`}
+      aria-label={`${part.partName}, ${t('common.viewDetail')}`}
     >
       <div className="parts-card-media">
         {imageUrl ? (
@@ -78,9 +77,6 @@ function PartCard({
         <StockBadge inStock={inStock} label={inStock ? availableLabel : outOfStockLabel} />
       </div>
       <div className="parts-card-actions" onClick={(e) => e.stopPropagation()}>
-        <Button type="button" variant="outline" className="w-full" onClick={() => onOpenDetail(part.id)}>
-          {detailLabel}
-        </Button>
         <Button type="button" className="w-full" onClick={() => onAddToCart(part.id)} disabled={!inStock}>
           {cartLabel}
         </Button>
@@ -120,6 +116,9 @@ export default function PartsPageContent() {
   useEffect(() => {
     lookupApi.models().then(setModels).catch(() => {});
     lookupApi.categories().then(setCategories).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     const params: Record<string, string> = {};
     if (searchParams.get('modelId')) params.modelId = searchParams.get('modelId')!;
     if (searchParams.get('categoryId')) params.categoryId = searchParams.get('categoryId')!;
@@ -134,21 +133,28 @@ export default function PartsPageContent() {
     loadParts(params);
   }, [searchParams]);
 
+  function pushFilters(overrides: Partial<{ search: string; modelId: string; categoryId: string }> = {}) {
+    const params = new URLSearchParams();
+    const q = (overrides.search ?? search).trim();
+    const m = overrides.modelId ?? modelId;
+    const c = overrides.categoryId ?? categoryId;
+    if (q) params.set('search', q);
+    if (m) params.set('modelId', m);
+    if (c) params.set('categoryId', c);
+    const qs = params.toString();
+    router.replace(qs ? `/parts?${qs}` : '/parts');
+  }
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    const params = new URLSearchParams();
-    if (search.trim()) params.set('search', search.trim());
-    if (modelId) params.set('modelId', modelId);
-    if (categoryId) params.set('categoryId', categoryId);
-    const qs = params.toString();
-    router.push(qs ? `/parts?${qs}` : '/parts');
+    pushFilters({ search });
   }
 
   function clearFilters() {
     setSearch('');
     setModelId('');
     setCategoryId('');
-    router.push('/parts');
+    router.replace('/parts');
   }
 
   async function addToCart(partId: string) {
@@ -175,46 +181,71 @@ export default function PartsPageContent() {
 
         <Card className="parts-filter-card">
           <h3 className="parts-filter-title">{t('common.filters')}</h3>
-          <form onSubmit={handleSearch} className="space-y-4">
-            <Input label={t('common.keyword')} value={search} onChange={(e) => setSearch(e.target.value)} />
-            <div>
-              <p className="parts-filter-list-label">{t('parts.model')}</p>
-              <div className="parts-filter-list" role="listbox" aria-label={t('parts.model')}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={!modelId}
-                  className={cn('parts-filter-list__item', !modelId && 'parts-filter-list__item--active')}
-                  onClick={() => setModelId('')}
-                >
-                  {t('common.allModels')}
-                </button>
-                {models.map((model) => (
+          <form onSubmit={handleSearch} className="parts-filter-form">
+            <div className="parts-filter-field">
+              <Input label={t('common.keyword')} value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+            <div className="parts-filter-lists">
+              <div className="parts-filter-group">
+                <p className="parts-filter-list-label">{t('parts.model')}</p>
+                <div className="parts-filter-list" role="listbox" aria-label={t('parts.model')}>
                   <button
-                    key={model.id}
                     type="button"
                     role="option"
-                    aria-selected={modelId === model.id}
-                    className={cn(
-                      'parts-filter-list__item',
-                      modelId === model.id && 'parts-filter-list__item--active',
-                    )}
-                    onClick={() => setModelId(model.id)}
+                    aria-selected={!modelId}
+                    className={cn('parts-filter-list__item', !modelId && 'parts-filter-list__item--active')}
+                    onClick={() => pushFilters({ modelId: '' })}
                   >
-                    {model.modelName}
+                    {t('common.allModels')}
                   </button>
-                ))}
+                  {models.map((model) => (
+                    <button
+                      key={model.id}
+                      type="button"
+                      role="option"
+                      aria-selected={modelId === model.id}
+                      className={cn(
+                        'parts-filter-list__item',
+                        modelId === model.id && 'parts-filter-list__item--active',
+                      )}
+                      onClick={() => pushFilters({ modelId: model.id })}
+                    >
+                      {model.modelName}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="parts-filter-group parts-filter-group--category">
+                <p className="parts-filter-list-label">{t('parts.category')}</p>
+                <div className="parts-filter-list" role="listbox" aria-label={t('parts.category')}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={!categoryId}
+                    className={cn('parts-filter-list__item', !categoryId && 'parts-filter-list__item--active')}
+                    onClick={() => pushFilters({ categoryId: '' })}
+                  >
+                    {t('common.allCategories')}
+                  </button>
+                  {categories.map((category) => (
+                    <button
+                      key={category.id}
+                      type="button"
+                      role="option"
+                      aria-selected={categoryId === category.id}
+                      className={cn(
+                        'parts-filter-list__item',
+                        categoryId === category.id && 'parts-filter-list__item--active',
+                      )}
+                      onClick={() => pushFilters({ categoryId: category.id })}
+                    >
+                      {category.name}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-            <Select label={t('parts.category')} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-              <option value="">{t('common.allCategories')}</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-            <div className="grid gap-2 pt-1">
+            <div className="parts-filter-actions grid gap-2 pt-1">
               <Button type="submit" className="w-full">
                 {t('common.search')}
               </Button>
@@ -266,7 +297,6 @@ export default function PartsPageContent() {
                   part={part}
                   onAddToCart={addToCart}
                   onOpenDetail={goToPartDetail}
-                  detailLabel={t('parts.detail')}
                   cartLabel={t('parts.addToCart')}
                   availableLabel={t('common.available')}
                   outOfStockLabel={t('common.outOfStock')}
@@ -282,7 +312,6 @@ export default function PartsPageContent() {
                     part={part}
                     onAddToCart={addToCart}
                     onOpenDetail={goToPartDetail}
-                    detailLabel={t('parts.detail')}
                     cartLabel={t('parts.addToCart')}
                     availableLabel={t('common.available')}
                     outOfStockLabel={t('common.outOfStock')}
@@ -320,10 +349,7 @@ export default function PartsPageContent() {
                     if (!part) return null;
 
                     return (
-                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button type="button" variant="outline" onClick={() => goToPartDetail(part.id)}>
-                          {t('parts.detail')}
-                        </Button>
+                      <div onClick={(e) => e.stopPropagation()}>
                         <Button type="button" onClick={() => addToCart(part.id)} disabled={part.stockQuantity <= 0}>
                           {t('common.add')}
                         </Button>

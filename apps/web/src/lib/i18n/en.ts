@@ -211,7 +211,7 @@ export const en = {
     empty: 'No orders yet.',
     emptyTab: 'No orders in this status.',
     stageConfirmation: 'Order confirmed',
-    stagePreparing: 'Preparing shipment',
+    stagePreparing: 'Preparing\nshipment',
     stageCompleted: 'Delivered',
     detailSubtitle: 'Order details and delivery status',
     deliveryProgress: 'Delivery progress',

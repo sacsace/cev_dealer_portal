@@ -170,7 +170,7 @@ export function DataTable({
 
   return (
     <div className="portal-data-table w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-white shadow-[var(--shadow-sm)]">
-      <div className="w-full overflow-x-auto">
+      <div className="portal-data-table__scroll w-full overflow-x-auto overflow-y-hidden">
       <table className="w-full min-w-full table-fixed text-sm">
           <thead>
             <tr className="border-b border-[var(--border)] bg-[var(--bg-secondary)]">
@@ -340,7 +340,7 @@ export function DealerOrderStageBadge({
   };
 
   return (
-    <span className={cn('status-badge', tones[stage] ?? 'status-badge--neutral')}>
+    <span className={cn('status-badge status-badge--stage', tones[stage] ?? 'status-badge--neutral')}>
       {labels[stage]}
     </span>
   );
