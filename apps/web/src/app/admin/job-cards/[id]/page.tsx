@@ -5,8 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { jobCardsApi, type JobCard } from '@/lib/api';
 import { PageTitle } from '@/components/ui';
-import { JobCardForm } from '@/components/dealer/job-card-form';
-import { AdminFormCard, AdminPageBody } from '@/components/admin/admin-page-shell';
+import { AdminJobCardDetail } from '@/components/admin/admin-job-card-detail';
+import { AdminPageBody } from '@/components/admin/admin-page-shell';
 import { useI18n } from '@/components/providers/i18n-provider';
 
 export default function AdminJobCardDetailPage() {
@@ -19,8 +19,16 @@ export default function AdminJobCardDetailPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    setLoading(true);
+    setError('');
     jobCardsApi
       .get(id)
+      .then(async (card) => {
+        if (card.status === 'CREATED') {
+          return jobCardsApi.markReceived(id);
+        }
+        return card;
+      })
       .then(setJobCard)
       .catch((err) => setError(err instanceof Error ? err.message : t('common.saveFailed')))
       .finally(() => setLoading(false));
@@ -36,7 +44,7 @@ export default function AdminJobCardDetailPage() {
           ← {t('common.back')}
         </Link>
         <PageTitle
-          title={t('admin.editJobCard')}
+          title={t('admin.viewJobCard')}
           subtitle={jobCard ? `${jobCard.jobCardNo} · ${jobCard.dealer?.dealerName ?? ''}` : t('common.loading')}
         />
       </div>
@@ -46,13 +54,11 @@ export default function AdminJobCardDetailPage() {
       ) : error ? (
         <p className="portal-alert portal-alert--error">{error}</p>
       ) : jobCard ? (
-        <AdminFormCard>
-          <JobCardForm
-            jobCard={jobCard}
-            onSaved={() => router.push('/admin/job-cards')}
-            onCancel={() => router.push('/admin/job-cards')}
-          />
-        </AdminFormCard>
+        <AdminJobCardDetail
+          jobCard={jobCard}
+          onUpdated={setJobCard}
+          onCancel={() => router.push('/admin/job-cards')}
+        />
       ) : null}
     </AdminPageBody>
   );

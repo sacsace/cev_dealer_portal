@@ -116,6 +116,7 @@ model User {
   permissions         UserPermission[]
   auditLogs           AuditLog[]
   jobCardsCreated     JobCard[]            @relation("JobCardCreatedBy")
+  jobCardReviewEntries JobCardReviewEntry[]
   warrantyClaimsCreated WarrantyClaim[]    @relation("WarrantyClaimCreatedBy")
   warrantyClaimsHandled WarrantyClaim[]    @relation("WarrantyClaimHandledBy")
   ordersCreated       Order[]              @relation("OrderCreatedBy")
@@ -457,9 +458,28 @@ model JobCard {
   carModel       VehicleModel?   @relation(fields: [carModelId], references: [id])
   createdBy      User            @relation("JobCardCreatedBy", fields: [createdById], references: [id])
   files          JobCardFile[]
+  reviewEntries  JobCardReviewEntry[]
   warrantyClaims WarrantyClaim[]
 
   @@map("job_cards")
+}
+
+model JobCardReviewEntry {
+  id            String         @id @default(cuid())
+  jobCardId     String         @map("job_card_id")
+  status        JobCardStatus?
+  observation   String?
+  rectification String?
+  authorId      String?        @map("author_id")
+  authorName    String         @map("author_name")
+  authorRole    String         @map("author_role")
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  jobCard JobCard @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+  author  User?   @relation(fields: [authorId], references: [id])
+
+  @@index([jobCardId, createdAt])
+  @@map("job_card_review_entries")
 }
 
 model JobCardFile {

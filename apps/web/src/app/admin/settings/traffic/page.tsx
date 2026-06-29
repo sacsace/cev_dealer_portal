@@ -17,6 +17,32 @@ function defaultDateRange() {
   };
 }
 
+function PathList({
+  rows,
+  emptyLabel,
+}: {
+  rows: Array<{ path: string; count: number }>;
+  emptyLabel: string;
+}) {
+  if (rows.length === 0) {
+    return <p className="text-[13px] text-[var(--text-secondary)]">{emptyLabel}</p>;
+  }
+
+  return (
+    <ul className="space-y-2 text-[13px] text-[var(--text-secondary)]">
+      {rows.map((row) => (
+        <li
+          key={row.path}
+          className="flex justify-between gap-4 border-b border-[var(--border)] pb-2"
+        >
+          <span className="truncate text-[var(--text-primary)]">{row.path}</span>
+          <span className="shrink-0 font-medium">{row.count}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default function AdminSettingsTrafficPage() {
   const { t } = useI18n();
   const initialRange = useMemo(() => defaultDateRange(), []);
@@ -85,17 +111,37 @@ export default function AdminSettingsTrafficPage() {
         {loadingTraffic ? (
           <p className="text-sm text-[var(--text-tertiary)]">{t('common.loading')}</p>
         ) : traffic ? (
-          <div className="space-y-6">
-            <div className="portal-kpi-grid portal-kpi-grid--2">
-              <KpiCard label={t('admin.settingsTotalVisits')} value={traffic.summary.totalVisits} />
-              <KpiCard label={t('admin.settingsUniquePaths')} value={traffic.summary.uniquePaths} />
-            </div>
+          <div className="space-y-8">
+            <section>
+              <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
+                {t('admin.settingsInflowSummary')}
+              </h3>
+              <div className="portal-kpi-grid portal-kpi-grid--4">
+                <KpiCard label={t('admin.settingsTotalVisits')} value={traffic.summary.totalVisits} />
+                <KpiCard label={t('admin.settingsSiteAccess')} value={traffic.summary.siteAccess} />
+                <KpiCard label={t('admin.settingsProductViews')} value={traffic.summary.productViews} />
+                <KpiCard label={t('admin.settingsUniquePaths')} value={traffic.summary.uniquePaths} />
+              </div>
+            </section>
+
+            <section>
+              <h3 className="mb-1 text-sm font-semibold text-[var(--text-primary)]">
+                {t('admin.settingsInflowByDay')}
+              </h3>
+              <p className="mb-3 text-[12px] text-[var(--text-secondary)]">
+                {t('admin.settingsInflowByDayHint')}
+              </p>
+              <ReportBarChart rows={trafficByDay} />
+            </section>
 
             {traffic.byRole.length > 0 ? (
-              <div>
-                <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
-                  {t('admin.settingsVisitsByRole')}
+              <section>
+                <h3 className="mb-1 text-sm font-semibold text-[var(--text-primary)]">
+                  {t('admin.settingsAccessByRole')}
                 </h3>
+                <p className="mb-3 text-[12px] text-[var(--text-secondary)]">
+                  {t('admin.settingsAccessByRoleHint')}
+                </p>
                 <ul className="space-y-2 text-[13px] text-[var(--text-secondary)]">
                   {traffic.byRole.map((row) => (
                     <li
@@ -107,36 +153,28 @@ export default function AdminSettingsTrafficPage() {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </section>
             ) : null}
 
-            <div>
-              <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
-                {t('admin.settingsVisitsByDay')}
+            <section>
+              <h3 className="mb-1 text-sm font-semibold text-[var(--text-primary)]">
+                {t('admin.settingsSiteAccessTitle')}
               </h3>
-              <ReportBarChart rows={trafficByDay} />
-            </div>
+              <p className="mb-3 text-[12px] text-[var(--text-secondary)]">
+                {t('admin.settingsSiteAccessDesc')}
+              </p>
+              <PathList rows={traffic.byAccessPath ?? []} emptyLabel={t('admin.settingsNoTraffic')} />
+            </section>
 
-            <div>
-              <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
-                {t('admin.settingsTopPaths')}
+            <section>
+              <h3 className="mb-1 text-sm font-semibold text-[var(--text-primary)]">
+                {t('admin.settingsProductViewsTitle')}
               </h3>
-              <ul className="space-y-2 text-[13px] text-[var(--text-secondary)]">
-                {traffic.byPath.length === 0 ? (
-                  <li>{t('admin.settingsNoTraffic')}</li>
-                ) : (
-                  traffic.byPath.map((row) => (
-                    <li
-                      key={row.path}
-                      className="flex justify-between gap-4 border-b border-[var(--border)] pb-2"
-                    >
-                      <span className="truncate text-[var(--text-primary)]">{row.path}</span>
-                      <span className="shrink-0 font-medium">{row.count}</span>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </div>
+              <p className="mb-3 text-[12px] text-[var(--text-secondary)]">
+                {t('admin.settingsProductViewsDesc')}
+              </p>
+              <PathList rows={traffic.byProductPath ?? []} emptyLabel={t('admin.settingsNoProductViews')} />
+            </section>
           </div>
         ) : null}
       </Card>

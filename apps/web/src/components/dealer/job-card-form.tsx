@@ -12,15 +12,18 @@ import {
   type JobCardType,
   type Fitment,
   type ProblemType,
+  type VehicleModel,
   type ApiUser,
 } from '@/lib/api';
 import { Button, Input, Select, Textarea } from '@/components/ui';
 import { useI18n } from '@/components/providers/i18n-provider';
 import { isValidVin, normalizeVin } from '@/lib/validation';
 import { getDealerJobCardDefaults } from '@/lib/dealer-profile';
+import { localizedLookupLabel } from '@/lib/lookup-label';
 
 type FormState = {
   vin: string;
+  carModelId: string;
   carModelName: string;
   fitment: string;
   gdmsNo: string;
@@ -45,6 +48,7 @@ const emptyForm = (user?: ApiUser | null): FormState => {
   const defaults = getDealerJobCardDefaults(user ?? null);
   return {
     vin: '',
+    carModelId: '',
     carModelName: '',
     fitment: '',
     gdmsNo: '',
@@ -69,7 +73,8 @@ const emptyForm = (user?: ApiUser | null): FormState => {
 function jobCardToForm(jobCard: JobCard): FormState {
   return {
     vin: jobCard.vin,
-    carModelName: jobCard.carModelName ?? '',
+    carModelId: jobCard.carModelId ?? jobCard.carModel?.id ?? '',
+    carModelName: jobCard.carModelName ?? jobCard.carModel?.modelName ?? '',
     fitment: jobCard.fitment ?? '',
     gdmsNo: jobCard.gdmsNo ?? '',
     type: jobCard.type ?? '',
@@ -93,6 +98,7 @@ function jobCardToForm(jobCard: JobCard): FormState {
 function toPayload(form: FormState) {
   return {
     vin: normalizeVin(form.vin),
+    carModelId: form.carModelId || undefined,
     carModelName: form.carModelName.trim() || undefined,
     fitment: form.fitment.trim() || undefined,
     gdmsNo: form.gdmsNo.trim() || undefined,
@@ -114,6 +120,35 @@ function toPayload(form: FormState) {
   };
 }
 
+function resolveCarModelFromLookup(
+  models: VehicleModel[],
+  lookup: { carModelId: string | null; carModelName: string | null },
+): Pick<FormState, 'carModelId' | 'carModelName'> {
+  if (lookup.carModelId) {
+    const model = models.find((item) => item.id === lookup.carModelId);
+    return {
+      carModelId: lookup.carModelId,
+      carModelName: model?.modelName ?? lookup.carModelName ?? '',
+    };
+  }
+
+  if (lookup.carModelName) {
+    const match = models.find(
+      (item) => item.modelName.toLowerCase() === lookup.carModelName!.toLowerCase(),
+    );
+    if (match) {
+      return { carModelId: match.id, carModelName: match.modelName };
+    }
+    return { carModelId: '', carModelName: lookup.carModelName };
+  }
+
+  return { carModelId: '', carModelName: '' };
+}
+
+function modelLabel(model: VehicleModel) {
+  return model.year ? `${model.modelName} (${model.year})` : model.modelName;
+}
+
 export function JobCardForm({
   jobCard,
   onSaved,
@@ -129,6 +164,7 @@ export function JobCardForm({
   const [problemTypes, setProblemTypes] = useState<ProblemType[]>([]);
   const [jobCardTypes, setJobCardTypes] = useState<JobCardType[]>([]);
   const [fitments, setFitments] = useState<Fitment[]>([]);
+  const [vehicleModels, setVehicleModels] = useState<VehicleModel[]>([]);
   const [form, setForm] = useState<FormState>(() =>
     jobCard ? jobCardToForm(jobCard) : emptyForm(getSession()),
   );
@@ -138,11 +174,13 @@ export function JobCardForm({
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [pendingPreviews, setPendingPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const initialVinRef = useRef(jobCard?.vin ?? '');
 
   useEffect(() => {
     lookupApi.problemTypes().then(setProblemTypes).catch(() => {});
     lookupApi.jobCardTypes().then(setJobCardTypes).catch(() => {});
     lookupApi.fitments().then(setFitments).catch(() => {});
+    lookupApi.models().then(setVehicleModels).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -168,6 +206,7 @@ export function JobCardForm({
 
   useEffect(() => {
     if (jobCard) {
+      initialVinRef.current = jobCard.vin;
       setForm(jobCardToForm(jobCard));
       setUploadedFiles(jobCard.files ?? []);
       setPendingFiles([]);
@@ -176,6 +215,7 @@ export function JobCardForm({
       return;
     }
 
+    initialVinRef.current = '';
     const user = getSession();
     setSessionUser(user);
     setForm(emptyForm(user));
@@ -184,6 +224,43 @@ export function JobCardForm({
     setPendingPreviews([]);
     setError('');
   }, [jobCard]);
+
+  useEffect(() => {
+    if (isEdit && form.vin === initialVinRef.current) return;
+
+    if (!isValidVin(form.vin)) {
+      if (!isEdit) {
+        setForm((prev) => ({ ...prev, carModelId: '', carModelName: '' }));
+      }
+      return;
+    }
+
+    const vin = normalizeVin(form.vin);
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      jobCardsApi
+        .lookupByVin(vin)
+        .then((lookup) => {
+          if (cancelled) return;
+
+          setForm((prev) => {
+            if (normalizeVin(prev.vin) !== vin) return prev;
+
+            if (!lookup.carModelId && !lookup.carModelName) {
+              return isEdit ? prev : { ...prev, carModelId: '', carModelName: '' };
+            }
+
+            return { ...prev, ...resolveCarModelFromLookup(vehicleModels, lookup) };
+          });
+        })
+        .catch(() => {});
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [form.vin, isEdit, vehicleModels]);
 
   useEffect(() => {
     return () => {
@@ -196,19 +273,25 @@ export function JobCardForm({
     setForm((prev) => ({ ...prev, [field]: nextValue }));
   }
 
+  function updateCarModel(modelId: string) {
+    const model = vehicleModels.find((item) => item.id === modelId);
+    setForm((prev) => ({
+      ...prev,
+      carModelId: modelId,
+      carModelName: model?.modelName ?? '',
+    }));
+  }
+
   function problemLabel(item: ProblemType) {
-    if (locale === 'en' && item.nameEn) return item.nameEn;
-    return item.name;
+    return localizedLookupLabel([item], item.name, locale) ?? item.name;
   }
 
   function typeLabel(item: JobCardType) {
-    if (locale === 'en' && item.nameEn) return item.nameEn;
-    return item.name;
+    return localizedLookupLabel([item], item.name, locale) ?? item.name;
   }
 
   function fitmentLabel(item: Fitment) {
-    if (locale === 'en' && item.nameEn) return item.nameEn;
-    return item.name;
+    return localizedLookupLabel([item], item.name, locale) ?? item.name;
   }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -263,6 +346,11 @@ export function JobCardForm({
       return;
     }
 
+    if (!form.carModelId && !form.carModelName.trim()) {
+      setError(t('jobCard.carModelRequired'));
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -290,7 +378,6 @@ export function JobCardForm({
 
   const fields: { key: keyof FormState; label: string; required?: boolean; type?: string; hint?: string; maxLength?: number }[] = [
     { key: 'vin', label: t('jobCard.vin'), required: true, hint: t('jobCard.vinHint'), maxLength: 17 },
-    { key: 'carModelName', label: t('jobCard.carModel'), required: true },
     { key: 'gdmsNo', label: t('jobCard.gdmsNo'), required: true },
     { key: 'kilometers', label: t('jobCard.kilometers'), required: true },
     { key: 'customerName', label: t('jobCard.customerName'), required: true },
@@ -309,18 +396,65 @@ export function JobCardForm({
       )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {fields.map((field) => (
-          <Input
-            key={field.key}
-            label={field.label}
-            required={field.required}
-            type={field.type ?? 'text'}
-            maxLength={field.maxLength ?? (field.key === 'mobile' ? 10 : undefined)}
-            value={form[field.key]}
-            onChange={(e) => update(field.key, e.target.value)}
-            placeholder={field.hint}
-          />
-        ))}
+        {fields.map((field) => {
+          if (field.key === 'vin') {
+            return (
+              <Input
+                key={field.key}
+                label={field.label}
+                required={field.required}
+                type={field.type ?? 'text'}
+                maxLength={field.maxLength}
+                value={form[field.key]}
+                onChange={(e) => update(field.key, e.target.value)}
+                placeholder={field.hint}
+              />
+            );
+          }
+
+          if (field.key === 'gdmsNo') {
+            return (
+              <div key="car-model-row" className="contents">
+                <Select
+                  label={t('jobCard.carModel')}
+                  required
+                  value={form.carModelId}
+                  onChange={(e) => updateCarModel(e.target.value)}
+                >
+                  <option value="">{t('jobCard.selectCarModel')}</option>
+                  {vehicleModels.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {modelLabel(model)}
+                    </option>
+                  ))}
+                </Select>
+                <Input
+                  key={field.key}
+                  label={field.label}
+                  required={field.required}
+                  type={field.type ?? 'text'}
+                  maxLength={field.maxLength ?? (field.key === 'mobile' ? 10 : undefined)}
+                  value={form[field.key]}
+                  onChange={(e) => update(field.key, e.target.value)}
+                  placeholder={field.hint}
+                />
+              </div>
+            );
+          }
+
+          return (
+            <Input
+              key={field.key}
+              label={field.label}
+              required={field.required}
+              type={field.type ?? 'text'}
+              maxLength={field.maxLength ?? (field.key === 'mobile' ? 10 : undefined)}
+              value={form[field.key]}
+              onChange={(e) => update(field.key, e.target.value)}
+              placeholder={field.hint}
+            />
+          );
+        })}
         <Select
           label={t('jobCard.fitment')}
           required

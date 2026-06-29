@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReportQueryDto } from '../reports/report-query.dto';
+import { isProductViewPath } from './traffic-path.util';
 
 @Injectable()
 export class AnalyticsService {
@@ -54,11 +55,22 @@ export class AnalyticsService {
 
     const totalVisits = visits.length;
     const byPathMap = new Map<string, number>();
+    const productByPathMap = new Map<string, number>();
+    const accessByPathMap = new Map<string, number>();
     const byRoleMap = new Map<string, number>();
     const byDayMap = new Map<string, number>();
+    let productViews = 0;
+    let siteAccess = 0;
 
     for (const visit of visits) {
       byPathMap.set(visit.path, (byPathMap.get(visit.path) ?? 0) + 1);
+      if (isProductViewPath(visit.path)) {
+        productViews += 1;
+        productByPathMap.set(visit.path, (productByPathMap.get(visit.path) ?? 0) + 1);
+      } else {
+        siteAccess += 1;
+        accessByPathMap.set(visit.path, (accessByPathMap.get(visit.path) ?? 0) + 1);
+      }
       const role = visit.role ?? 'ANONYMOUS';
       byRoleMap.set(role, (byRoleMap.get(role) ?? 0) + 1);
       const day = visit.createdAt.toISOString().slice(0, 10);
@@ -66,17 +78,23 @@ export class AnalyticsService {
     }
 
     const sortDesc = (a: { count: number }, b: { count: number }) => b.count - a.count;
+    const toSortedList = (map: Map<string, number>, limit = 20) =>
+      [...map.entries()]
+        .map(([path, count]) => ({ path, count }))
+        .sort(sortDesc)
+        .slice(0, limit);
 
     return {
       filters: { from: query.from ?? null, to: query.to ?? null },
       summary: {
         totalVisits,
         uniquePaths: byPathMap.size,
+        productViews,
+        siteAccess,
       },
-      byPath: [...byPathMap.entries()]
-        .map(([path, count]) => ({ path, count }))
-        .sort(sortDesc)
-        .slice(0, 20),
+      byPath: toSortedList(byPathMap),
+      byProductPath: toSortedList(productByPathMap),
+      byAccessPath: toSortedList(accessByPathMap),
       byRole: [...byRoleMap.entries()]
         .map(([role, count]) => ({ role, count }))
         .sort(sortDesc),

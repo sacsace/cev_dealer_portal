@@ -101,7 +101,7 @@ export async function fetchAdminDashboardData(role?: ApiUser['role'] | null): Pr
 
   const todayOrders = ordersRes.data.filter((o) => isToday(o.createdAt)).length;
   const pendingJobCardCount = pendingJobCards.data.filter((j) =>
-    ['SUBMITTED', 'UNDER_REVIEW'].includes(j.status),
+    ['CREATED', 'SUBMITTED', 'UNDER_REVIEW'].includes(j.status),
   ).length;
   const pendingClaimCount = pendingClaims.data.filter((c) =>
     ['SUBMITTED', 'UNDER_REVIEW'].includes(c.status),

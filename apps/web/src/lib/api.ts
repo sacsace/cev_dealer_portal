@@ -1,4 +1,5 @@
 import { getApiUrl } from '@/lib/env';
+import { notifyCartUpdated } from '@/lib/cart-events';
 
 export interface ApiUser {
   id: string;
@@ -255,19 +256,32 @@ export const usersApi = {
 };
 
 export const cartApi = {
-  get: () => apiFetch<CartResponse>('/cart'),
-  addItem: (partId: string, quantity: number) =>
-    apiFetch<CartResponse>('/cart/items', {
+  get: async () => {
+    const cart = await apiFetch<CartResponse>('/cart');
+    notifyCartUpdated(cart.itemCount);
+    return cart;
+  },
+  addItem: async (partId: string, quantity: number) => {
+    const cart = await apiFetch<CartResponse>('/cart/items', {
       method: 'POST',
       body: JSON.stringify({ partId, quantity }),
-    }),
-  updateItem: (id: string, quantity: number) =>
-    apiFetch<CartResponse>(`/cart/items/${id}`, {
+    });
+    notifyCartUpdated(cart.itemCount);
+    return cart;
+  },
+  updateItem: async (id: string, quantity: number) => {
+    const cart = await apiFetch<CartResponse>(`/cart/items/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ quantity }),
-    }),
-  removeItem: (id: string) =>
-    apiFetch<CartResponse>(`/cart/items/${id}`, { method: 'DELETE' }),
+    });
+    notifyCartUpdated(cart.itemCount);
+    return cart;
+  },
+  removeItem: async (id: string) => {
+    const cart = await apiFetch<CartResponse>(`/cart/items/${id}`, { method: 'DELETE' });
+    notifyCartUpdated(cart.itemCount);
+    return cart;
+  },
 };
 
 export const ordersApi = {
@@ -322,10 +336,18 @@ export const jobCardsApi = {
     return apiFetch<{ data: JobCard[]; meta: PaginationMeta }>(`/job-cards${query}`);
   },
   get: (id: string) => apiFetch<JobCard>(`/job-cards/${id}`),
+  lookupByVin: (vin: string) =>
+    apiFetch<{ carModelId: string | null; carModelName: string | null }>(
+      `/job-cards/lookup/by-vin/${encodeURIComponent(vin)}`,
+    ),
   create: (data: Record<string, unknown>) =>
     apiFetch<JobCard>('/job-cards', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: Record<string, unknown>) =>
     apiFetch<JobCard>(`/job-cards/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  review: (id: string, data: { status: string; observation?: string; rectification?: string }) =>
+    apiFetch<JobCard>(`/job-cards/${id}/review`, { method: 'PUT', body: JSON.stringify(data) }),
+  markReceived: (id: string) =>
+    apiFetch<JobCard>(`/job-cards/${id}/receive`, { method: 'PUT', body: JSON.stringify({}) }),
   uploadFile: (id: string, file: File) =>
     apiUpload<JobCardFile>(`/job-cards/${id}/files`, file),
   removeFile: (id: string, fileId: string) =>
@@ -533,8 +555,15 @@ export type UpdateMailSettingsPayload = Partial<
 
 export interface TrafficStatsReport {
   filters: { from: string | null; to: string | null };
-  summary: { totalVisits: number; uniquePaths: number };
+  summary: {
+    totalVisits: number;
+    uniquePaths: number;
+    productViews: number;
+    siteAccess: number;
+  };
   byPath: Array<{ path: string; count: number }>;
+  byProductPath: Array<{ path: string; count: number }>;
+  byAccessPath: Array<{ path: string; count: number }>;
   byRole: Array<{ role: string; count: number }>;
   byDay: Array<{ day: string; count: number }>;
 }
@@ -804,11 +833,24 @@ export interface JobCardFile {
   createdAt?: string;
 }
 
+export interface JobCardReviewEntry {
+  id: string;
+  status?: string | null;
+  observation?: string | null;
+  rectification?: string | null;
+  authorId?: string | null;
+  authorName: string;
+  authorRole: string;
+  createdAt: string;
+}
+
 export interface JobCard {
   id: string;
   jobCardNo: string;
   jobCardDate: string;
+  carModelId?: string | null;
   carModelName?: string | null;
+  carModel?: { id: string; modelName: string; modelCode?: string } | null;
   customerName: string;
   vin: string;
   mobile: string;
@@ -829,6 +871,7 @@ export interface JobCard {
   rectification?: string | null;
   status: string;
   files?: JobCardFile[];
+  reviewEntries?: JobCardReviewEntry[];
   dealer?: { dealerName: string; dealerCode: string };
 }
 

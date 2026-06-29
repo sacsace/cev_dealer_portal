@@ -280,13 +280,40 @@ export function StatusBadge({ status }: { status: string }) {
   const tones: Record<string, string> = {
     CREATED: 'status-badge--neutral',
     SUBMITTED: 'status-badge--info',
+    UNDER_REVIEW: 'status-badge--warning',
     APPROVED: 'status-badge--success',
     REJECTED: 'status-badge--danger',
+    CLOSED: 'status-badge--neutral',
     DRAFT: 'status-badge--warning',
     ORDER_SHIPPED: 'status-badge--purple',
     DELIVERED: 'status-badge--success',
     ACTIVE: 'status-badge--success',
     INACTIVE: 'status-badge--neutral',
+  };
+
+  return (
+    <span className={cn('status-badge', tones[status] ?? 'status-badge--neutral')}>
+      {label}
+    </span>
+  );
+}
+
+export function JobCardStatusBadge({ status }: { status: string }) {
+  const { t } = useI18n();
+  const label =
+    t(`jobCardStatus.${status}`) !== `jobCardStatus.${status}`
+      ? t(`jobCardStatus.${status}`)
+      : t(`status.${status}`) !== `status.${status}`
+        ? t(`status.${status}`)
+        : status.replace(/_/g, ' ');
+
+  const tones: Record<string, string> = {
+    CREATED: 'status-badge--neutral',
+    SUBMITTED: 'status-badge--info',
+    UNDER_REVIEW: 'status-badge--warning',
+    APPROVED: 'status-badge--success',
+    REJECTED: 'status-badge--danger',
+    CLOSED: 'status-badge--neutral',
   };
 
   return (

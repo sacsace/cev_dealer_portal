@@ -37,6 +37,8 @@ const layouts = [
   ['admin/claims', 'adminClaims', '/admin/claims'],
   ['admin/claims/[id]', 'adminClaimDetail', '/admin/claims'],
   ['admin/reports', 'adminReports', '/admin/reports'],
+  ['admin/settings', 'adminSettings', '/admin/settings'],
+  ['admin/settings/traffic', 'adminSettingsTraffic', '/admin/settings/traffic'],
   ['admin/account', 'adminAccount', '/admin/account'],
   ['(dealer)/dealer', 'dealerHome', '/dealer'],
   ['(dealer)/parts', 'dealerParts', '/parts'],

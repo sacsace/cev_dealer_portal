@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { cartApi, logoutSession, refreshSession } from '@/lib/api';
+import { CART_UPDATED_EVENT } from '@/lib/cart-events';
 import { useEffect, useMemo, useState } from 'react';
 import type { ApiUser } from '@/lib/api';
 import {
@@ -92,10 +93,12 @@ function matchNavHref(href: string, pathname: string, search: string) {
 function DealerSidebarNav({
   pathname,
   search,
+  cartCount,
   onNavigate,
 }: {
   pathname: string;
   search: string;
+  cartCount: number;
   onNavigate?: () => void;
 }) {
   const { t } = useI18n();
@@ -202,6 +205,18 @@ function DealerSidebarNav({
                     >
                       <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
                       <span className="admin-nav-link-label">{t(item.labelKey)}</span>
+                      {item.key === 'cart' && cartCount > 0 && (
+                        <span
+                          className={cn(
+                            'ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center self-center rounded-full px-1.5 text-[11px] font-semibold leading-none',
+                            active
+                              ? 'bg-white text-[var(--text-primary)]'
+                              : 'bg-[var(--accent)] text-white',
+                          )}
+                        >
+                          {cartCount > 99 ? '99+' : cartCount}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
@@ -227,7 +242,19 @@ export function DealerShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     refreshSession().then(setUser);
-    cartApi.get().then((c) => setCartCount(c.itemCount)).catch(() => {});
+    cartApi.get().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    function onCartUpdated(event: Event) {
+      const detail = (event as CustomEvent<{ itemCount: number }>).detail;
+      if (typeof detail?.itemCount === 'number') {
+        setCartCount(detail.itemCount);
+      }
+    }
+
+    window.addEventListener(CART_UPDATED_EVENT, onCartUpdated);
+    return () => window.removeEventListener(CART_UPDATED_EVENT, onCartUpdated);
   }, []);
 
   useEffect(() => {
@@ -264,7 +291,7 @@ export function DealerShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="flex-1 overflow-y-auto py-1">
-          <DealerSidebarNav pathname={pathname} search={search} />
+          <DealerSidebarNav pathname={pathname} search={search} cartCount={cartCount} />
         </div>
 
         {user && (
@@ -402,7 +429,12 @@ export function DealerShell({ children }: { children: React.ReactNode }) {
           </>
         }
       >
-        <DealerSidebarNav pathname={pathname} search={search} onNavigate={() => setMobileOpen(false)} />
+        <DealerSidebarNav
+          pathname={pathname}
+          search={search}
+          cartCount={cartCount}
+          onNavigate={() => setMobileOpen(false)}
+        />
       </PortalMobileDrawer>
     </div>
   );

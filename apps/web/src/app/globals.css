@@ -263,6 +263,11 @@ a:focus:not(:focus-visible) {
   color: var(--danger);
 }
 
+.portal-alert--success {
+  background: color-mix(in srgb, var(--cev-green) 12%, white);
+  color: var(--text-primary);
+}
+
 .portal-alert--inline {
   padding: 0;
   background: transparent;
@@ -1249,21 +1254,20 @@ a:focus:not(:focus-visible) {
 }
 
 .cart-page-layout {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
-  align-items: start;
-}
-
-@media (min-width: 1280px) {
-  .cart-page-layout {
-    grid-template-columns: minmax(0, 1fr) min(100%, 20rem);
-  }
 }
 
 .cart-page-table .portal-data-table {
   border: none;
   box-shadow: none;
   border-radius: 0;
+  overflow: visible;
+}
+
+.cart-page-table .portal-data-table__scroll {
+  overflow: visible;
 }
 
 .cart-page-table .portal-data-table table {
@@ -1319,13 +1323,8 @@ a:focus:not(:focus-visible) {
 
 .cart-summary-card {
   width: 100%;
-}
-
-@media (min-width: 1280px) {
-  .cart-summary-card {
-    position: sticky;
-    top: calc(52px + 1.75rem);
-  }
+  max-width: 24rem;
+  margin-left: auto;
 }
 
 @media (max-width: 767px) {
@@ -1746,6 +1745,12 @@ a:focus:not(:focus-visible) {
   border-color: var(--cev-green);
   background: var(--cev-green);
   color: #ffffff;
+}
+
+.delivery-progress__step--rejected {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, white);
+  color: var(--danger);
 }
 
 .delivery-progress__arrow {

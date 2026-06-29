@@ -18,6 +18,7 @@ import { memoryStorage } from 'multer';
 import { UserRole } from '@prisma/client';
 import { JobCardsService } from './job-cards.service';
 import { CreateJobCardDto, UpdateJobCardDto } from './dto/job-card.dto';
+import { AdminUpdateJobCardDto } from './dto/admin-update-job-card.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -38,6 +39,15 @@ export class JobCardsController {
     @Query('search') search?: string,
   ) {
     return this.jobCardsService.findAll(user, +page, +limit, search);
+  }
+
+  @Get('lookup/by-vin/:vin')
+  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER, UserRole.DEALER)
+  lookupByVin(
+    @Param('vin') vin: string,
+    @CurrentUser() user: { role: UserRole; dealerId?: string },
+  ) {
+    return this.jobCardsService.lookupByVin(vin, user);
   }
 
   @Get(':id')
@@ -90,6 +100,27 @@ export class JobCardsController {
     @Req() req: Request,
   ) {
     return this.jobCardsService.removeFile(id, fileId, user, req.ip);
+  }
+
+  @Put(':id/receive')
+  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  markAsReceived(
+    @Param('id') id: string,
+    @CurrentUser() user: { sub: string; role: UserRole; dealerId?: string },
+    @Req() req: Request,
+  ) {
+    return this.jobCardsService.markAsReceived(id, user, req.ip);
+  }
+
+  @Put(':id/review')
+  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  adminReview(
+    @Param('id') id: string,
+    @Body() dto: AdminUpdateJobCardDto,
+    @CurrentUser() user: { sub: string; role: UserRole; dealerId?: string },
+    @Req() req: Request,
+  ) {
+    return this.jobCardsService.adminReview(id, dto, user, req.ip);
   }
 
   @Put(':id')

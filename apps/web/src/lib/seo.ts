@@ -44,6 +44,7 @@ export type SeoPageKey =
   | 'adminClaimDetail'
   | 'adminReports'
   | 'adminSettings'
+  | 'adminSettingsTraffic'
   | 'adminAccount'
   | 'dealerHome'
   | 'dealerParts'

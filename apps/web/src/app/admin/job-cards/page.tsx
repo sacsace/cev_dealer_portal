@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { jobCardsApi, type JobCard } from '@/lib/api';
-import { Button, DataTable, PageTitle, StatusBadge, useConfirmDialog } from '@/components/ui';
+import { Button, DataTable, PageTitle, JobCardStatusBadge, useConfirmDialog } from '@/components/ui';
 import { AdminActionAlert, AdminTableDeleteButton } from '@/components/admin/admin-list-tools';
 import { AdminPageBody, AdminSearchBar } from '@/components/admin/admin-page-shell';
 import { formatDate } from '@/lib/utils';
@@ -88,7 +88,7 @@ export default function AdminJobCardsPage() {
             j.vin,
             j.carModelName ?? '—',
             formatDate(j.jobCardDate),
-            <StatusBadge key={`${j.id}-status`} status={j.status} />,
+            <JobCardStatusBadge key={`${j.id}-status`} status={j.status} />,
           ])}
           actions={(index) => {
             const item = items[index];
