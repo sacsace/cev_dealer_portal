@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { cartApi, partsApi, type Part } from '@/lib/api';
+import { getPartImageUrl } from '@/lib/part-image';
 import { Button, useAlertDialog } from '@/components/ui';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
@@ -82,6 +83,7 @@ export function PartDetailDialog({
   }
 
   const inStock = part ? part.stockQuantity > 0 : false;
+  const imageUrl = part ? getPartImageUrl(part) : null;
 
   return (
     <>
@@ -121,8 +123,13 @@ export function PartDetailDialog({
               <p className="text-sm text-[var(--text-secondary)]">{t('common.saveFailed')}</p>
             ) : (
               <div className="space-y-5">
-                <div className="flex h-40 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--bg-secondary)] text-[var(--text-tertiary)]">
-                  {part.partNumber}
+                <div className="flex h-40 items-center justify-center overflow-hidden rounded-[var(--radius-sm)] bg-[var(--bg-secondary)] text-[var(--text-tertiary)]">
+                  {imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={imageUrl} alt={part.partName} className="h-full w-full object-cover" />
+                  ) : (
+                    part.partNumber
+                  )}
                 </div>
 
                 <div>

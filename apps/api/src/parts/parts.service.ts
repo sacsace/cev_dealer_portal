@@ -3,6 +3,7 @@ import * as ExcelJS from 'exceljs';
 import { AuditAction, PartStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../common/services/audit.service';
+import { deleteStoredFile, saveUploadedImage } from '../common/utils/file-storage.util';
 import { CreatePartDto, PartSearchQuery, UpdatePartDto } from './dto/part.dto';
 
 const BULK_TEMPLATE_COLUMNS = [
@@ -219,6 +220,97 @@ export class PartsService {
     });
 
     return part;
+  }
+
+  async uploadImage(
+    id: string,
+    file: Express.Multer.File,
+    actor: { sub: string; role: UserRole },
+    ip?: string,
+  ) {
+    await this.findOne(id);
+
+    const saved = await saveUploadedImage('parts', id, file);
+    const existingCount = await this.prisma.partImage.count({ where: { partId: id } });
+    const isPrimary = existingCount === 0;
+
+    const image = await this.prisma.partImage.create({
+      data: {
+        partId: id,
+        url: saved.fileUrl,
+        isPrimary,
+      },
+    });
+
+    if (isPrimary) {
+      await this.prisma.part.update({
+        where: { id },
+        data: { imageUrl: saved.fileUrl },
+      });
+    }
+
+    await this.audit.log({
+      userId: actor.sub,
+      userRole: actor.role,
+      action: AuditAction.UPDATE,
+      module: 'PARTS',
+      targetId: id,
+      afterData: image,
+      ipAddress: ip,
+    });
+
+    return image;
+  }
+
+  async removeImage(
+    partId: string,
+    imageId: string,
+    actor: { sub: string; role: UserRole },
+    ip?: string,
+  ) {
+    await this.findOne(partId);
+
+    const image = await this.prisma.partImage.findFirst({
+      where: { id: imageId, partId },
+    });
+
+    if (!image) {
+      throw new NotFoundException('Image not found');
+    }
+
+    await deleteStoredFile(image.url);
+    await this.prisma.partImage.delete({ where: { id: imageId } });
+
+    if (image.isPrimary) {
+      const next = await this.prisma.partImage.findFirst({
+        where: { partId },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      await this.prisma.part.update({
+        where: { id: partId },
+        data: { imageUrl: next?.url ?? null },
+      });
+
+      if (next) {
+        await this.prisma.partImage.update({
+          where: { id: next.id },
+          data: { isPrimary: true },
+        });
+      }
+    }
+
+    await this.audit.log({
+      userId: actor.sub,
+      userRole: actor.role,
+      action: AuditAction.UPDATE,
+      module: 'PARTS',
+      targetId: partId,
+      beforeData: image,
+      ipAddress: ip,
+    });
+
+    return { message: 'Image deleted' };
   }
 
   async remove(id: string, actor: { sub: string; role: UserRole }, ip?: string) {

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { cartApi, partsApi, type Part } from '@/lib/api';
+import { getPartImageUrl } from '@/lib/part-image';
 import { Button, Card, PageTitle, useAlertDialog } from '@/components/ui';
 import { formatCurrency } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
@@ -50,6 +51,8 @@ export default function PartDetailPage() {
     [t('parts.warranty'), part.warrantyAvailable ? t('common.yes') : t('common.no')],
   ];
 
+  const imageUrl = getPartImageUrl(part);
+
   return (
     <div>
       {alertDialog}
@@ -64,8 +67,13 @@ export default function PartDetailPage() {
       <PageTitle title={part.partName} subtitle={part.partNumber} />
       <div className="grid gap-8 md:grid-cols-2">
         <Card>
-          <div className="flex h-72 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--bg-secondary)] text-[var(--text-tertiary)]">
-            {t('parts.partImage')}
+          <div className="flex h-72 items-center justify-center overflow-hidden rounded-[var(--radius-sm)] bg-[var(--bg-secondary)] text-[var(--text-tertiary)]">
+            {imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={imageUrl} alt={part.partName} className="h-full w-full object-cover" />
+            ) : (
+              t('parts.partImage')
+            )}
           </div>
         </Card>
         <Card className="space-y-4">

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { cartApi, lookupApi, partsApi, type Part, type Category, type VehicleModel } from '@/lib/api';
+import { getPartImageUrl } from '@/lib/part-image';
 import { Button, Card, DataTable, Input, PageTitle, Select, useAlertDialog } from '@/components/ui';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
@@ -34,6 +35,7 @@ function PartCard({
   outOfStockLabel: string;
 }) {
   const inStock = part.stockQuantity > 0;
+  const imageUrl = getPartImageUrl(part);
 
   return (
     <Card
@@ -51,7 +53,12 @@ function PartCard({
       aria-label={`${part.partName} ${detailLabel}`}
     >
       <div className="parts-card-media">
-        <span className="parts-card-media-code">{part.partNumber}</span>
+        {imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={imageUrl} alt={part.partName} className="h-full w-full object-cover" />
+        ) : (
+          <span className="parts-card-media-code">{part.partNumber}</span>
+        )}
       </div>
       <h3 className="parts-card-name">{part.partName}</h3>
       <p className="parts-card-category">{part.category?.name ?? '—'}</p>

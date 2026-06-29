@@ -181,6 +181,10 @@ export const partsApi = {
   update: (id: string, data: UpdatePartPayload) =>
     apiFetch<Part>(`/parts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   remove: (id: string) => apiFetch<{ message: string }>(`/parts/${id}`, { method: 'DELETE' }),
+  uploadImage: (id: string, file: File) =>
+    apiUpload<PartImage>(`/parts/${id}/images`, file),
+  removeImage: (id: string, imageId: string) =>
+    apiFetch<{ message: string }>(`/parts/${id}/images/${imageId}`, { method: 'DELETE' }),
   downloadBulkTemplate: async () => {
     const token = getToken();
     const res = await fetch(`${getApiUrl()}/parts/bulk-template`, {
@@ -627,11 +631,18 @@ export interface PaginationMeta {
   totalPages: number;
 }
 
+export interface PartImage {
+  id: string;
+  url: string;
+  isPrimary?: boolean;
+}
+
 export interface Part {
   id: string;
   partNumber: string;
   partName: string;
   description?: string;
+  imageUrl?: string | null;
   dealerPrice: number | string;
   mrp: number | string;
   gstRate: number | string;
@@ -642,7 +653,7 @@ export interface Part {
   category?: { id: string; name: string };
   categoryId?: string;
   modelMappings?: Array<{ modelId: string; model: { id: string; modelName: string } }>;
-  images?: Array<{ url: string }>;
+  images?: PartImage[];
   createdAt?: string;
 }
 

@@ -26,6 +26,7 @@ import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RequirePermission } from '../common/decorators/permissions.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { getMaxUploadBytes } from '../common/utils/file-storage.util';
 
 @Controller('parts')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -102,6 +103,38 @@ export class PartsController {
     @Req() req: Request,
   ) {
     return this.partsService.update(id, dto, user, req.ip);
+  }
+
+  @Post(':id/images')
+  @UseGuards(PermissionsGuard)
+  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @RequirePermission(PermissionModule.PARTS, PermissionAction.EDIT)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: getMaxUploadBytes() },
+    }),
+  )
+  uploadImage(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: { sub: string; role: UserRole },
+    @Req() req: Request,
+  ) {
+    return this.partsService.uploadImage(id, file, user, req.ip);
+  }
+
+  @Delete(':id/images/:imageId')
+  @UseGuards(PermissionsGuard)
+  @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
+  @RequirePermission(PermissionModule.PARTS, PermissionAction.EDIT)
+  removeImage(
+    @Param('id') id: string,
+    @Param('imageId') imageId: string,
+    @CurrentUser() user: { sub: string; role: UserRole },
+    @Req() req: Request,
+  ) {
+    return this.partsService.removeImage(id, imageId, user, req.ip);
   }
 
   @Delete(':id')

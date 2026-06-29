@@ -1,12 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { lookupApi, partsApi, type Category, type Part, type UpdatePartPayload, type VehicleModel } from '@/lib/api';
+import {
+  lookupApi,
+  partsApi,
+  resolveFileUrl,
+  type Category,
+  type Part,
+  type PartImage,
+  type UpdatePartPayload,
+  type VehicleModel,
+} from '@/lib/api';
 import { Button, Input, Select, Textarea } from '@/components/ui';
 import { useI18n } from '@/components/providers/i18n-provider';
 
 const PART_STATUSES = ['AVAILABLE', 'OUT_OF_STOCK', 'DISCONTINUED', 'COMING_SOON'] as const;
+const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif';
 
 type FormState = {
   partNumber: string;
@@ -66,11 +76,15 @@ export function PartForm({
 }) {
   const { t } = useI18n();
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isEdit = Boolean(part);
   const [categories, setCategories] = useState<Category[]>([]);
   const [models, setModels] = useState<VehicleModel[]>([]);
   const [loadingLookups, setLoadingLookups] = useState(true);
   const [form, setForm] = useState<FormState>(part ? partToForm(part) : emptyForm());
+  const [uploadedImages, setUploadedImages] = useState<PartImage[]>(part?.images ?? []);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [pendingPreviews, setPendingPreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -89,8 +103,20 @@ export function PartForm({
 
   useEffect(() => {
     setForm(part ? partToForm(part) : emptyForm());
+    setUploadedImages(part?.images ?? []);
+    setPendingFiles([]);
+    setPendingPreviews((prev) => {
+      prev.forEach((url) => URL.revokeObjectURL(url));
+      return [];
+    });
     setError('');
   }, [part]);
+
+  useEffect(() => {
+    return () => {
+      pendingPreviews.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [pendingPreviews]);
 
   function update(field: keyof FormState, value: string | boolean | string[]) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -103,6 +129,55 @@ export function PartForm({
         ? prev.modelIds.filter((id) => id !== modelId)
         : [...prev.modelIds, modelId],
     }));
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(e.target.files ?? []);
+    if (selected.length === 0) return;
+
+    setPendingFiles((prev) => [...prev, ...selected]);
+    setPendingPreviews((prev) => [
+      ...prev,
+      ...selected.map((file) => URL.createObjectURL(file)),
+    ]);
+    e.target.value = '';
+  }
+
+  function removePendingFile(index: number) {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+    setPendingPreviews((prev) => {
+      const next = [...prev];
+      const [removed] = next.splice(index, 1);
+      if (removed) URL.revokeObjectURL(removed);
+      return next;
+    });
+  }
+
+  async function removeUploadedImage(imageId: string) {
+    if (!part?.id) return;
+
+    setLoading(true);
+    setError('');
+    try {
+      await partsApi.removeImage(part.id, imageId);
+      setUploadedImages((prev) => prev.filter((image) => image.id !== imageId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('parts.uploadFailed'));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function uploadPendingFiles(partId: string) {
+    for (const file of pendingFiles) {
+      const image = await partsApi.uploadImage(partId, file);
+      setUploadedImages((prev) => [...prev, image]);
+    }
+    setPendingFiles([]);
+    setPendingPreviews((prev) => {
+      prev.forEach((url) => URL.revokeObjectURL(url));
+      return [];
+    });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -130,14 +205,22 @@ export function PartForm({
         modelIds: form.modelIds,
       };
 
+      let savedId = part?.id;
+
       if (isEdit && part) {
         await partsApi.update(part.id, payload as UpdatePartPayload);
       } else {
-        await partsApi.create({
+        const created = await partsApi.create({
           partNumber: form.partNumber.trim(),
           ...payload,
         });
+        savedId = created.id;
       }
+
+      if (savedId && pendingFiles.length > 0) {
+        await uploadPendingFiles(savedId);
+      }
+
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.saveFailed'));
@@ -245,6 +328,76 @@ export function PartForm({
           />
           {t('parts.warranty')}
         </label>
+      </div>
+
+      <div className="space-y-3 border-t border-[var(--border)] pt-4">
+        <div>
+          <p className="mb-1 text-[13px] font-medium text-[var(--text-primary)]">{t('parts.partImage')}</p>
+          <p className="text-[12px] text-[var(--text-secondary)]">{t('parts.imageHint')}</p>
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={IMAGE_ACCEPT}
+          multiple
+          className="hidden"
+          onChange={handleFileSelect}
+        />
+
+        <Button
+          type="button"
+          variant="outline"
+          disabled={loading}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {t('parts.addImages')}
+        </Button>
+
+        {(uploadedImages.length > 0 || pendingPreviews.length > 0) && (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            {uploadedImages.map((image) => (
+              <div
+                key={image.id}
+                className="group relative overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)]"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={resolveFileUrl(image.url)}
+                  alt={form.partName || form.partNumber}
+                  className="aspect-square w-full object-cover"
+                />
+                {isEdit ? (
+                  <button
+                    type="button"
+                    className="absolute right-2 top-2 rounded-md bg-black/60 px-2 py-1 text-[11px] text-white opacity-0 transition group-hover:opacity-100"
+                    disabled={loading}
+                    onClick={() => removeUploadedImage(image.id)}
+                  >
+                    {t('parts.removeImage')}
+                  </button>
+                ) : null}
+              </div>
+            ))}
+            {pendingPreviews.map((preview, index) => (
+              <div
+                key={preview}
+                className="group relative overflow-hidden rounded-lg border border-dashed border-[var(--border)] bg-[var(--bg-secondary)]"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={preview} alt="" className="aspect-square w-full object-cover" />
+                <button
+                  type="button"
+                  className="absolute right-2 top-2 rounded-md bg-black/60 px-2 py-1 text-[11px] text-white opacity-0 transition group-hover:opacity-100"
+                  disabled={loading}
+                  onClick={() => removePendingFile(index)}
+                >
+                  {t('parts.removeImage')}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <Textarea
