@@ -45,6 +45,7 @@ export const en = {
     phase2: 'Coming in Phase 2',
     saveFailed: 'Failed to save.',
     saved: 'Saved.',
+    apiUnreachable: 'Cannot reach the API server. Make sure the API is running.',
   },
   lang: {
     ko: '한국어',
@@ -182,6 +183,7 @@ export const en = {
     gst: 'GST',
     grandTotal: 'Grand Total',
     checkout: 'Checkout',
+    invalidQty: 'Quantity must be at least {min}.',
   },
   checkout: {
     title: 'Checkout',

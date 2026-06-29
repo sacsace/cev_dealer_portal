@@ -45,6 +45,7 @@ export const ko = {
     phase2: 'Phase 2 구현 예정',
     saveFailed: '저장에 실패했습니다.',
     saved: '저장되었습니다.',
+    apiUnreachable: 'API 서버에 연결할 수 없습니다. API가 실행 중인지 확인해 주세요.',
   },
   lang: {
     ko: '한국어',
@@ -182,6 +183,7 @@ export const ko = {
     gst: 'GST',
     grandTotal: '총액',
     checkout: '결제하기',
+    invalidQty: '수량은 {min}개 이상이어야 합니다.',
   },
   checkout: {
     title: '주문 확인',

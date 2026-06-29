@@ -34,8 +34,16 @@ export class OrdersController {
     @Query('limit') limit = '20',
     @Query('status') status?: OrderStatus,
     @Query('search') search?: string,
+    @Query('pendingDelivery') pendingDelivery?: string,
   ) {
-    return this.ordersService.findAll(user, +page, +limit, status, search);
+    return this.ordersService.findAll(
+      user,
+      +page,
+      +limit,
+      status,
+      search,
+      pendingDelivery === 'true',
+    );
   }
 
   @Get(':id/proforma-invoice')

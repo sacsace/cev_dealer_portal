@@ -26,6 +26,7 @@ export class OrdersService {
     limit = 20,
     status?: OrderStatus,
     search?: string,
+    pendingDelivery?: boolean,
   ) {
     const where: Record<string, unknown> = {};
 
@@ -34,7 +35,13 @@ export class OrdersService {
       where.dealerId = user.dealerId;
     }
 
-    if (status) where.status = status;
+    if (pendingDelivery) {
+      where.status = {
+        notIn: [OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.REJECTED],
+      };
+    } else if (status) {
+      where.status = status;
+    }
 
     if (search) {
       where.OR = [

@@ -15,6 +15,7 @@ import {
   type VehicleModel,
   type ApiUser,
 } from '@/lib/api';
+import { loadJobCardCount } from '@/lib/job-card-events';
 import { Button, Input, Select, Textarea } from '@/components/ui';
 import { useI18n } from '@/components/providers/i18n-provider';
 import { isValidVin, normalizeVin } from '@/lib/validation';
@@ -366,6 +367,10 @@ export function JobCardForm({
 
       if (savedId && pendingFiles.length > 0) {
         await uploadPendingFiles(savedId);
+      }
+
+      if (!isEdit) {
+        await loadJobCardCount().catch(() => {});
       }
 
       onSaved();

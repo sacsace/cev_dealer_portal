@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Trash2 } from 'lucide-react';
 import { jobCardsApi, type JobCard } from '@/lib/api';
+import { loadJobCardCount } from '@/lib/job-card-events';
 import { Button, Card, DataTable, PageTitle, PortalSearchBar, JobCardStatusBadge, useConfirmDialog } from '@/components/ui';
 import { formatDate } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
@@ -45,6 +46,7 @@ export default function JobCardListPage() {
     setActionError('');
     try {
       await jobCardsApi.remove(item.id);
+      await loadJobCardCount().catch(() => {});
       await load();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : t('jobCard.deleteFailed'));

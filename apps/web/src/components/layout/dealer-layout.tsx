@@ -16,6 +16,8 @@ import {
 import { cn } from '@/lib/utils';
 import { cartApi, logoutSession, refreshSession } from '@/lib/api';
 import { CART_UPDATED_EVENT } from '@/lib/cart-events';
+import { loadJobCardCount, JOB_CARDS_UPDATED_EVENT } from '@/lib/job-card-events';
+import { loadPendingOrderCount, PENDING_ORDERS_UPDATED_EVENT } from '@/lib/order-events';
 import { useEffect, useMemo, useState } from 'react';
 import type { ApiUser } from '@/lib/api';
 import {
@@ -94,11 +96,15 @@ function DealerSidebarNav({
   pathname,
   search,
   cartCount,
+  jobCardCount,
+  pendingOrderCount,
   onNavigate,
 }: {
   pathname: string;
   search: string;
   cartCount: number;
+  jobCardCount: number;
+  pendingOrderCount: number;
   onNavigate?: () => void;
 }) {
   const { t } = useI18n();
@@ -217,6 +223,30 @@ function DealerSidebarNav({
                           {cartCount > 99 ? '99+' : cartCount}
                         </span>
                       )}
+                      {item.key === 'job-list' && jobCardCount > 0 && (
+                        <span
+                          className={cn(
+                            'ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center self-center rounded-full px-1.5 text-[11px] font-semibold leading-none',
+                            active
+                              ? 'bg-white text-[var(--text-primary)]'
+                              : 'bg-[var(--accent)] text-white',
+                          )}
+                        >
+                          {jobCardCount > 99 ? '99+' : jobCardCount}
+                        </span>
+                      )}
+                      {item.key === 'orders-all' && pendingOrderCount > 0 && (
+                        <span
+                          className={cn(
+                            'ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center self-center rounded-full px-1.5 text-[11px] font-semibold leading-none',
+                            active
+                              ? 'bg-white text-[var(--text-primary)]'
+                              : 'bg-[var(--accent)] text-white',
+                          )}
+                        >
+                          {pendingOrderCount > 99 ? '99+' : pendingOrderCount}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
@@ -237,12 +267,16 @@ export function DealerShell({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
   const [user, setUser] = useState<ApiUser | null>(null);
   const [cartCount, setCartCount] = useState(0);
+  const [jobCardCount, setJobCardCount] = useState(0);
+  const [pendingOrderCount, setPendingOrderCount] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [query, setQuery] = useState('');
 
   useEffect(() => {
     refreshSession().then(setUser);
     cartApi.get().catch(() => {});
+    loadJobCardCount().then(setJobCardCount).catch(() => {});
+    loadPendingOrderCount().then(setPendingOrderCount).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -253,9 +287,34 @@ export function DealerShell({ children }: { children: React.ReactNode }) {
       }
     }
 
+    function onJobCardsUpdated(event: Event) {
+      const detail = (event as CustomEvent<{ total: number }>).detail;
+      if (typeof detail?.total === 'number') {
+        setJobCardCount(detail.total);
+      }
+    }
+
+    function onPendingOrdersUpdated(event: Event) {
+      const detail = (event as CustomEvent<{ total: number }>).detail;
+      if (typeof detail?.total === 'number') {
+        setPendingOrderCount(detail.total);
+      }
+    }
+
     window.addEventListener(CART_UPDATED_EVENT, onCartUpdated);
-    return () => window.removeEventListener(CART_UPDATED_EVENT, onCartUpdated);
+    window.addEventListener(JOB_CARDS_UPDATED_EVENT, onJobCardsUpdated);
+    window.addEventListener(PENDING_ORDERS_UPDATED_EVENT, onPendingOrdersUpdated);
+    return () => {
+      window.removeEventListener(CART_UPDATED_EVENT, onCartUpdated);
+      window.removeEventListener(JOB_CARDS_UPDATED_EVENT, onJobCardsUpdated);
+      window.removeEventListener(PENDING_ORDERS_UPDATED_EVENT, onPendingOrdersUpdated);
+    };
   }, []);
+
+  useEffect(() => {
+    loadJobCardCount().then(setJobCardCount).catch(() => {});
+    loadPendingOrderCount().then(setPendingOrderCount).catch(() => {});
+  }, [pathname, search]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -291,7 +350,13 @@ export function DealerShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="flex-1 overflow-y-auto py-1">
-          <DealerSidebarNav pathname={pathname} search={search} cartCount={cartCount} />
+          <DealerSidebarNav
+            pathname={pathname}
+            search={search}
+            cartCount={cartCount}
+            jobCardCount={jobCardCount}
+            pendingOrderCount={pendingOrderCount}
+          />
         </div>
 
         {user && (
@@ -433,6 +498,8 @@ export function DealerShell({ children }: { children: React.ReactNode }) {
           pathname={pathname}
           search={search}
           cartCount={cartCount}
+          jobCardCount={jobCardCount}
+          pendingOrderCount={pendingOrderCount}
           onNavigate={() => setMobileOpen(false)}
         />
       </PortalMobileDrawer>

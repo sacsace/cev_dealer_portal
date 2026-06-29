@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { jobCardsApi, type JobCard } from '@/lib/api';
+import { loadJobCardCount } from '@/lib/job-card-events';
 import { Button, DataTable, PageTitle, JobCardStatusBadge, useConfirmDialog } from '@/components/ui';
 import { AdminActionAlert, AdminTableDeleteButton } from '@/components/admin/admin-list-tools';
 import { AdminPageBody, AdminSearchBar } from '@/components/admin/admin-page-shell';
@@ -43,6 +44,7 @@ export default function AdminJobCardsPage() {
 
     try {
       await jobCardsApi.remove(item.id);
+      await loadJobCardCount().catch(() => {});
       await load(search);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : t('jobCard.deleteFailed'));

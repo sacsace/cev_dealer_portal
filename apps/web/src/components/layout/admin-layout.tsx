@@ -6,7 +6,9 @@ import { Menu, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getSession, logoutSession, refreshSession, type ApiUser } from '@/lib/api';
 import { adminDashboardItem, adminNavGroups } from '@/lib/admin-nav';
-import { filterAdminNavGroups } from '@/lib/admin-access';
+import { filterAdminNavGroups, canAccessAdminNavItem } from '@/lib/admin-access';
+import { loadJobCardCount, JOB_CARDS_UPDATED_EVENT } from '@/lib/job-card-events';
+import { loadPendingOrderCount, PENDING_ORDERS_UPDATED_EVENT } from '@/lib/order-events';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
@@ -22,10 +24,14 @@ import {
 function SidebarNav({
   pathname,
   role,
+  jobCardCount,
+  pendingOrderCount,
   onNavigate,
 }: {
   pathname: string;
   role?: string | null;
+  jobCardCount: number;
+  pendingOrderCount: number;
   onNavigate?: () => void;
 }) {
   const { t } = useI18n();
@@ -68,6 +74,30 @@ function SidebarNav({
                 >
                   <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
                   <span className="admin-nav-link-label">{t(item.labelKey)}</span>
+                  {item.key === 'job-cards' && jobCardCount > 0 && (
+                    <span
+                      className={cn(
+                        'ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center self-center rounded-full px-1.5 text-[11px] font-semibold leading-none',
+                        active
+                          ? 'bg-white text-[var(--text-primary)]'
+                          : 'bg-[var(--accent)] text-white',
+                      )}
+                    >
+                      {jobCardCount > 99 ? '99+' : jobCardCount}
+                    </span>
+                  )}
+                  {item.key === 'orders' && pendingOrderCount > 0 && (
+                    <span
+                      className={cn(
+                        'ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center self-center rounded-full px-1.5 text-[11px] font-semibold leading-none',
+                        active
+                          ? 'bg-white text-[var(--text-primary)]'
+                          : 'bg-[var(--accent)] text-white',
+                      )}
+                    >
+                      {pendingOrderCount > 99 ? '99+' : pendingOrderCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -84,10 +114,56 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
   const [user, setUser] = useState<ApiUser | null>(() => getSession());
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [jobCardCount, setJobCardCount] = useState(0);
+  const [pendingOrderCount, setPendingOrderCount] = useState(0);
 
   useEffect(() => {
     refreshSession().then(setUser);
   }, []);
+
+  useEffect(() => {
+    if (!user || !canAccessAdminNavItem(user.role, 'job-cards')) return;
+    loadJobCardCount().then(setJobCardCount).catch(() => {});
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !canAccessAdminNavItem(user.role, 'orders')) return;
+    loadPendingOrderCount().then(setPendingOrderCount).catch(() => {});
+  }, [user]);
+
+  useEffect(() => {
+    function onJobCardsUpdated(event: Event) {
+      const detail = (event as CustomEvent<{ total: number }>).detail;
+      if (typeof detail?.total === 'number') {
+        setJobCardCount(detail.total);
+      }
+    }
+
+    window.addEventListener(JOB_CARDS_UPDATED_EVENT, onJobCardsUpdated);
+    return () => window.removeEventListener(JOB_CARDS_UPDATED_EVENT, onJobCardsUpdated);
+  }, []);
+
+  useEffect(() => {
+    function onPendingOrdersUpdated(event: Event) {
+      const detail = (event as CustomEvent<{ total: number }>).detail;
+      if (typeof detail?.total === 'number') {
+        setPendingOrderCount(detail.total);
+      }
+    }
+
+    window.addEventListener(PENDING_ORDERS_UPDATED_EVENT, onPendingOrdersUpdated);
+    return () => window.removeEventListener(PENDING_ORDERS_UPDATED_EVENT, onPendingOrdersUpdated);
+  }, []);
+
+  useEffect(() => {
+    if (!user || !canAccessAdminNavItem(user.role, 'job-cards')) return;
+    loadJobCardCount().then(setJobCardCount).catch(() => {});
+  }, [pathname, user]);
+
+  useEffect(() => {
+    if (!user || !canAccessAdminNavItem(user.role, 'orders')) return;
+    loadPendingOrderCount().then(setPendingOrderCount).catch(() => {});
+  }, [pathname, user]);
 
   async function logout() {
     await logoutSession();
@@ -101,7 +177,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <CevLogo href="/admin" height={CEV_SIDEBAR_LOGO_HEIGHT} variant="sidebar" />
         </div>
         <div className="flex-1 overflow-y-auto py-1">
-          <SidebarNav pathname={pathname} role={user?.role} />
+          <SidebarNav
+            pathname={pathname}
+            role={user?.role}
+            jobCardCount={jobCardCount}
+            pendingOrderCount={pendingOrderCount}
+          />
         </div>
         {user ? (
           <PortalSidebarAccountLink
@@ -185,7 +266,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         }
         footer={<PortalLogoutButton onClick={logout} />}
       >
-        <SidebarNav pathname={pathname} role={user?.role} onNavigate={() => setMobileOpen(false)} />
+        <SidebarNav
+          pathname={pathname}
+          role={user?.role}
+          jobCardCount={jobCardCount}
+          pendingOrderCount={pendingOrderCount}
+          onNavigate={() => setMobileOpen(false)}
+        />
       </PortalMobileDrawer>
     </div>
   );

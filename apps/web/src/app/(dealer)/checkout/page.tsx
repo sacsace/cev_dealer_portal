@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cartApi, ordersApi, getSession } from '@/lib/api';
 import { notifyCartUpdated } from '@/lib/cart-events';
+import { loadPendingOrderCount } from '@/lib/order-events';
 import { Button, Card, Input, PageTitle, useAlertDialog } from '@/components/ui';
 import { formatCurrency } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
@@ -36,6 +37,7 @@ export default function CheckoutPage() {
     }
     await alert({ message: t('common.orderPlaced'), variant: 'success' });
     notifyCartUpdated(0);
+    await loadPendingOrderCount().catch(() => {});
     router.push('/orders');
   }
 

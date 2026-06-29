@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { ordersApi, type Order } from '@/lib/api';
+import { loadPendingOrderCount } from '@/lib/order-events';
 import {
   COURIER_OPTIONS,
   DELIVERY_STATUS_OPTIONS,
@@ -89,6 +90,7 @@ export function OrderDetailDialog({
       const updated = await ordersApi.approve(order.id);
       setOrder(updated);
       onUpdated();
+      await loadPendingOrderCount().catch(() => {});
       await alert({ message: t('admin.orderApproved'), variant: 'success' });
     } catch (err) {
       await alert({
@@ -122,6 +124,7 @@ export function OrderDetailDialog({
       const updated = await ordersApi.reject(order.id, reason);
       setOrder(updated);
       onUpdated();
+      await loadPendingOrderCount().catch(() => {});
       await alert({ message: t('admin.orderRejected'), variant: 'success' });
     } catch (err) {
       await alert({
@@ -149,6 +152,7 @@ export function OrderDetailDialog({
       });
       setOrder(updated);
       onUpdated();
+      await loadPendingOrderCount().catch(() => {});
       await alert({ message: t('admin.orderShipmentSaved'), variant: 'success' });
       onClose();
     } catch (err) {
