@@ -91,7 +91,7 @@ export default function CartPage() {
     loadCart().catch(async (error) => {
       await alert({
         message: formatApiError(error, t('common.saveFailed'), t('common.apiUnreachable')),
-        variant: 'error',
+        variant: 'info',
       });
     });
   }, [alert, t]);
@@ -114,7 +114,7 @@ export default function CartPage() {
     } catch (error) {
       await alert({
         message: formatApiError(error, t('common.saveFailed'), t('common.apiUnreachable')),
-        variant: 'error',
+        variant: 'info',
       });
     } finally {
       setBusyItemId(null);
@@ -151,7 +151,7 @@ export default function CartPage() {
                 minQty={item.part.minimumOrderQty ?? 1}
                 disabled={busyItemId === item.id}
                 onCommit={updateQuantity}
-                onError={(message) => alert({ message, variant: 'error' })}
+                onError={(message) => alert({ message, variant: 'info' })}
               />,
               formatCurrency(item.unitPrice),
               formatCurrency(item.gstAmount),

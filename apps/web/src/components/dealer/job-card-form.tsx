@@ -438,7 +438,7 @@ export function JobCardForm({
                   label={field.label}
                   required={field.required}
                   type={field.type ?? 'text'}
-                  maxLength={field.maxLength ?? (field.key === 'mobile' ? 10 : undefined)}
+                  maxLength={field.maxLength}
                   value={form[field.key]}
                   onChange={(e) => update(field.key, e.target.value)}
                   placeholder={field.hint}
