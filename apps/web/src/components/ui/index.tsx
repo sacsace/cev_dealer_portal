@@ -1,7 +1,9 @@
 'use client';
 
 import { forwardRef } from 'react';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { SortDirection } from '@/lib/table-sort';
 import { getDealerOrderStage } from '@/lib/dealer-order-stage';
 import { useI18n } from '@/components/providers/i18n-provider';
 import { PasswordInput } from './password-input';
@@ -148,6 +150,10 @@ export function DataTable({
   rowIds,
   onRowClick,
   selection,
+  columnKeys,
+  sortableColumnKeys,
+  sort,
+  onSort,
 }: {
   columns: string[];
   rows: Array<Array<React.ReactNode>>;
@@ -162,11 +168,17 @@ export function DataTable({
     allSelected: boolean;
     someSelected: boolean;
   };
+  columnKeys?: string[];
+  sortableColumnKeys?: string[];
+  sort?: { key: string; direction: SortDirection };
+  onSort?: (key: string) => void;
 }) {
   const { t } = useI18n();
   const empty = emptyMessage ?? t('common.noRecords');
   const extraCols = (actions ? 1 : 0) + (selection ? 1 : 0);
   const hasIndexCol = columns[0] === '#';
+  const keys = columnKeys ?? columns.map((_, index) => String(index));
+  const sortableKeys = new Set(sortableColumnKeys ?? []);
 
   return (
     <div className="portal-data-table w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-white shadow-[var(--shadow-sm)]">
@@ -188,17 +200,48 @@ export function DataTable({
                   />
                 </th>
               )}
-              {columns.map((col, colIndex) => (
-                <th
-                  key={col}
-                  className={cn(
-                    'px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]',
-                    hasIndexCol && colIndex === 0 && 'w-12',
-                  )}
-                >
-                  {col}
-                </th>
-              ))}
+              {columns.map((col, colIndex) => {
+                const colKey = keys[colIndex] ?? String(colIndex);
+                const isSortable = sortableKeys.has(colKey) && onSort;
+                const isActive = sort?.key === colKey;
+
+                return (
+                  <th
+                    key={colKey}
+                    className={cn(
+                      'px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]',
+                      hasIndexCol && colIndex === 0 && 'w-12',
+                    )}
+                    aria-sort={
+                      isActive ? (sort?.direction === 'asc' ? 'ascending' : 'descending') : undefined
+                    }
+                  >
+                    {isSortable ? (
+                      <button
+                        type="button"
+                        onClick={() => onSort(colKey)}
+                        className={cn(
+                          'portal-table-sort-btn',
+                          isActive && 'portal-table-sort-btn--active',
+                        )}
+                      >
+                        <span>{col}</span>
+                        {isActive ? (
+                          sort?.direction === 'asc' ? (
+                            <ArrowUp className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+                          ) : (
+                            <ArrowDown className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+                          )
+                        ) : (
+                          <ArrowUp className="h-3.5 w-3.5 opacity-0" strokeWidth={2} aria-hidden />
+                        )}
+                      </button>
+                    ) : (
+                      col
+                    )}
+                  </th>
+                );
+              })}
               {actions && (
                 <th className="w-28 px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
                   {t('common.action')}

@@ -245,7 +245,7 @@ export class OrdersService {
       ipAddress: ip,
     });
 
-    return order;
+    return this.findOne(id, actor);
   }
 
   async reject(id: string, dto: RejectOrderDto, actor: { sub: string; role: UserRole }, ip?: string) {
@@ -266,7 +266,7 @@ export class OrdersService {
       ipAddress: ip,
     });
 
-    return order;
+    return this.findOne(id, actor);
   }
 
   async ship(id: string, dto: ShipOrderDto, actor: { sub: string; role: UserRole }, ip?: string) {

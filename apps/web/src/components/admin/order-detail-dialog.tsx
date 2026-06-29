@@ -247,7 +247,7 @@ export function OrderDetailDialog({
                         </tr>
                       </thead>
                       <tbody>
-                        {order.items.map((item) => (
+                        {(order.items ?? []).map((item) => (
                           <tr key={item.partNumber} className="border-b border-[var(--border)] last:border-0">
                             <td className="px-3 py-2.5 text-[13px]">{item.partNumber}</td>
                             <td className="px-3 py-2.5 text-[13px]">{item.partName}</td>

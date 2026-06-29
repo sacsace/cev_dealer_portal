@@ -272,6 +272,10 @@ export const ko = {
     noReviewHistory: '아직 검토 댓글이 없습니다.',
     reviewObservation: '관찰 내용',
     reviewRectification: '조치 내용',
+    tabActive: '진행 중',
+    tabCompleted: '완료',
+    emptyActive: '진행 중인 Job Card가 없습니다.',
+    emptyCompleted: '완료된 Job Card가 없습니다.',
   },
   jobCardStatus: {
     CREATED: '신규',

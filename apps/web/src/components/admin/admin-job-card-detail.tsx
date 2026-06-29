@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { jobCardsApi, resolveFileUrl, type JobCard } from '@/lib/api';
+import { loadJobCardCount } from '@/lib/job-card-events';
 import { Button, Card, Select, Textarea, JobCardStatusBadge, ImagePreviewDialog } from '@/components/ui';
 import { JobCardProgressStepper } from '@/components/admin/job-card-progress-stepper';
 import { JobCardReviewHistory } from '@/components/job-card/job-card-review-history';
@@ -53,7 +54,7 @@ export function AdminJobCardDetail({
 }: {
   jobCard: JobCard;
   onUpdated: (updated: JobCard) => void;
-  onCancel: () => void;
+  onCancel: (options?: { status?: string }) => void;
 }) {
   const { t, locale } = useI18n();
   const { problemTypes, jobCardTypes, fitments } = useLookupCatalog();
@@ -93,10 +94,11 @@ export function AdminJobCardDetail({
       setObservation('');
       setRectification('');
       onUpdated(updated);
+      await loadJobCardCount().catch(() => {});
 
       if (options?.redirect) {
         setSaveNotice(t('common.saved'));
-        window.setTimeout(() => onCancel(), 1000);
+        window.setTimeout(() => onCancel({ status: updated.status }), 1000);
         return;
       }
     } catch (err) {
@@ -253,7 +255,7 @@ export function AdminJobCardDetail({
           {saveNotice ? <p className="portal-alert portal-alert--success">{saveNotice}</p> : null}
 
           <div className="portal-form-actions border-t border-[var(--border)] pt-4">
-            <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
+            <Button type="button" variant="outline" onClick={() => onCancel({ status })} disabled={saving}>
               {t('jobCard.backToList')}
             </Button>
             <Button type="button" disabled={saving} onClick={() => void saveReview(undefined, { redirect: true })}>

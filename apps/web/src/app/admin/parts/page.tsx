@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { partsApi, type Part } from '@/lib/api';
@@ -9,8 +9,28 @@ import { AdminActionAlert, AdminBulkSelectionBar, AdminTableDeleteButton } from 
 import { PartBulkImportDialog } from '@/components/admin/part-bulk-import-dialog';
 import { AdminPageBody, AdminSearchBar } from '@/components/admin/admin-page-shell';
 import { formatCurrency } from '@/lib/utils';
+import { nextSortState, sortByKey, type SortDirection } from '@/lib/table-sort';
 import { useTableSelection } from '@/hooks/use-table-selection';
 import { useI18n } from '@/components/providers/i18n-provider';
+
+const PART_COLUMN_KEYS = [
+  'index',
+  'partNumber',
+  'partName',
+  'category',
+  'dealerPrice',
+  'stockQuantity',
+  'status',
+] as const;
+
+const PART_SORT_ACCESSORS: Record<string, (part: Part) => string | number> = {
+  partNumber: (part) => part.partNumber,
+  partName: (part) => part.partName,
+  category: (part) => part.category?.name ?? '',
+  dealerPrice: (part) => Number(part.dealerPrice),
+  stockQuantity: (part) => part.stockQuantity,
+  status: (part) => part.status,
+};
 
 export default function AdminPartsPage() {
   const { t } = useI18n();
@@ -19,9 +39,13 @@ export default function AdminPartsPage() {
   const [parts, setParts] = useState<Part[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-    const [actionError, setActionError] = useState('');
+  const [actionError, setActionError] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [sort, setSort] = useState<{ key: string; direction: SortDirection }>({
+    key: 'partNumber',
+    direction: 'asc',
+  });
   const { selectedIds, setSelectedIds, selection } = useTableSelection(parts);
 
   const load = useCallback(async (q = search) => {
@@ -44,7 +68,16 @@ export default function AdminPartsPage() {
     load();
   }, [load]);
 
-    async function handleDeleteOne(part: Part) {
+  const sortedParts = useMemo(
+    () => sortByKey(parts, sort.key, sort.direction, PART_SORT_ACCESSORS),
+    [parts, sort.direction, sort.key],
+  );
+
+  function handleSort(key: string) {
+    setSort((current) => nextSortState(current.key, current.direction, key));
+  }
+
+  async function handleDeleteOne(part: Part) {
     const ok = await confirm({ message: t('admin.deletePartConfirm') });
     if (!ok) return;
 
@@ -127,13 +160,17 @@ export default function AdminPartsPage() {
             t('parts.stock'),
             t('orders.status'),
           ]}
-          rowIds={parts.map((part) => part.id)}
+          columnKeys={[...PART_COLUMN_KEYS]}
+          sortableColumnKeys={PART_COLUMN_KEYS.filter((key) => key !== 'index')}
+          sort={sort}
+          onSort={handleSort}
+          rowIds={sortedParts.map((part) => part.id)}
           selection={selection}
           onRowClick={(index) => {
-            const part = parts[index];
+            const part = sortedParts[index];
             if (part) router.push(`/admin/parts/${part.id}`);
           }}
-          rows={parts.map((part, i) => [
+          rows={sortedParts.map((part, i) => [
             i + 1,
             part.partNumber,
             part.partName,
@@ -143,7 +180,7 @@ export default function AdminPartsPage() {
             <StatusBadge key={`${part.id}-status`} status={part.status} />,
           ])}
           actions={(index) => {
-            const part = parts[index];
+            const part = sortedParts[index];
             if (!part) return null;
 
             return (

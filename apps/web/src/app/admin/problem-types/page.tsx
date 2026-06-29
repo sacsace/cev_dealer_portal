@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { problemTypesApi, type ProblemType } from '@/lib/api';
@@ -8,8 +8,18 @@ import { Button, DataTable, PageTitle, StatusBadge, useConfirmDialog } from '@/c
 import { AdminActionAlert, AdminBulkSelectionBar, AdminTableDeleteButton } from '@/components/admin/admin-list-tools';
 import { AdminPageBody, AdminSearchBar } from '@/components/admin/admin-page-shell';
 import { formatDate } from '@/lib/utils';
+import { nextSortState, sortByKey, type SortDirection } from '@/lib/table-sort';
 import { useTableSelection } from '@/hooks/use-table-selection';
 import { useI18n } from '@/components/providers/i18n-provider';
+
+const PROBLEM_TYPE_COLUMN_KEYS = [
+  'index',
+  'name',
+  'nameEn',
+  'sortOrder',
+  'status',
+  'createdAt',
+] as const;
 
 export default function AdminProblemTypesPage() {
   const { t, locale } = useI18n();
@@ -18,9 +28,24 @@ export default function AdminProblemTypesPage() {
   const [items, setItems] = useState<ProblemType[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-    const [actionError, setActionError] = useState('');
+  const [actionError, setActionError] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [sort, setSort] = useState<{ key: string; direction: SortDirection }>({
+    key: 'sortOrder',
+    direction: 'asc',
+  });
   const { selectedIds, setSelectedIds, selection } = useTableSelection(items);
+
+  const sortAccessors = useMemo<Record<string, (item: ProblemType) => string | number>>(
+    () => ({
+      name: (item) => item.name,
+      nameEn: (item) => item.nameEn ?? '',
+      sortOrder: (item) => item.sortOrder,
+      status: (item) => item.status,
+      createdAt: (item) => (item.createdAt ? new Date(item.createdAt).getTime() : 0),
+    }),
+    [],
+  );
 
   const load = useCallback(async (q = search) => {
     setLoading(true);
@@ -40,12 +65,21 @@ export default function AdminProblemTypesPage() {
     load();
   }, [load]);
 
+  const sortedItems = useMemo(
+    () => sortByKey(items, sort.key, sort.direction, sortAccessors),
+    [items, sort.direction, sort.key, sortAccessors],
+  );
+
+  function handleSort(key: string) {
+    setSort((current) => nextSortState(current.key, current.direction, key));
+  }
+
   function displayName(item: ProblemType) {
     if (locale === 'en' && item.nameEn) return item.nameEn;
     return item.name;
   }
 
-    async function handleDeleteOne(item: ProblemType) {
+  async function handleDeleteOne(item: ProblemType) {
     const ok = await confirm({ message: t('admin.deleteProblemTypeConfirm') });
     if (!ok) return;
 
@@ -122,13 +156,17 @@ export default function AdminProblemTypesPage() {
             t('orders.status'),
             t('orders.date'),
           ]}
-          rowIds={items.map((m) => m.id)}
+          columnKeys={[...PROBLEM_TYPE_COLUMN_KEYS]}
+          sortableColumnKeys={PROBLEM_TYPE_COLUMN_KEYS.filter((key) => key !== 'index')}
+          sort={sort}
+          onSort={handleSort}
+          rowIds={sortedItems.map((m) => m.id)}
           selection={selection}
           onRowClick={(index) => {
-            const item = items[index];
+            const item = sortedItems[index];
             if (item) router.push(`/admin/problem-types/${item.id}`);
           }}
-          rows={items.map((m, i) => [
+          rows={sortedItems.map((m, i) => [
             i + 1,
             displayName(m),
             m.nameEn ?? '—',
@@ -137,7 +175,7 @@ export default function AdminProblemTypesPage() {
             m.createdAt ? formatDate(m.createdAt) : '—',
           ])}
           actions={(index) => {
-            const item = items[index];
+            const item = sortedItems[index];
             if (!item) return null;
 
             return (

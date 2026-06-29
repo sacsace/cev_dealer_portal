@@ -1240,6 +1240,29 @@ a:focus:not(:focus-visible) {
   background: var(--bg-secondary);
 }
 
+.portal-table-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.portal-table-sort-btn:hover,
+.portal-table-sort-btn--active {
+  color: var(--text-primary);
+}
+
+.portal-table-sort-btn:hover svg,
+.portal-table-sort-btn--active svg {
+  opacity: 1 !important;
+}
+
 .portal-data-table {
   width: 100%;
   overflow-x: auto;

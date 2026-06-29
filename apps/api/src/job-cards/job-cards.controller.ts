@@ -37,8 +37,9 @@ export class JobCardsController {
     @Query('page') page = '1',
     @Query('limit') limit = '20',
     @Query('search') search?: string,
+    @Query('progress') progress?: 'active' | 'completed',
   ) {
-    return this.jobCardsService.findAll(user, +page, +limit, search);
+    return this.jobCardsService.findAll(user, +page, +limit, search, progress);
   }
 
   @Get('lookup/by-vin/:vin')

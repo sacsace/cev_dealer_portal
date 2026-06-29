@@ -272,6 +272,10 @@ export const en = {
     noReviewHistory: 'No review comments yet.',
     reviewObservation: 'Observation',
     reviewRectification: 'Rectification',
+    tabActive: 'In progress',
+    tabCompleted: 'Completed',
+    emptyActive: 'No job cards in progress.',
+    emptyCompleted: 'No completed job cards.',
   },
   jobCardStatus: {
     CREATED: 'New',

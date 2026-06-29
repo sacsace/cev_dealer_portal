@@ -8,7 +8,7 @@ export function notifyJobCardsUpdated(total: number) {
 }
 
 export async function loadJobCardCount() {
-  const res = await jobCardsApi.list({ limit: '1', page: '1' });
+  const res = await jobCardsApi.list({ limit: '1', page: '1', progress: 'active' });
   const total = res.meta.total ?? 0;
   notifyJobCardsUpdated(total);
   return total;

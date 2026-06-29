@@ -38,12 +38,23 @@ export class JobCardsService {
     page = 1,
     limit = 20,
     search?: string,
+    progress?: 'active' | 'completed',
   ) {
     const where: Record<string, unknown> = {};
 
     if (user.role === UserRole.DEALER) {
       if (!user.dealerId) throw new ForbiddenException();
       where.dealerId = user.dealerId;
+    }
+
+    if (progress === 'completed') {
+      where.status = {
+        in: [JobCardStatus.APPROVED, JobCardStatus.REJECTED, JobCardStatus.CLOSED],
+      };
+    } else if (progress === 'active') {
+      where.status = {
+        in: [JobCardStatus.CREATED, JobCardStatus.SUBMITTED, JobCardStatus.UNDER_REVIEW],
+      };
     }
 
     if (search) {
