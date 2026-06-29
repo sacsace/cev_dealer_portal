@@ -8,6 +8,7 @@ import { DeliveryProgressStepper } from '@/components/dealer/delivery-progress-s
 import { Button, Card, DataTable, DealerOrderStageBadge, PageTitle } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
+import { OrderReviewHistory } from '@/components/order/order-review-history';
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -19,7 +20,7 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
 }
 
 export default function DealerOrderDetailPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const [order, setOrder] = useState<Order | null>(null);
@@ -167,6 +168,12 @@ export default function DealerOrderDetailPage() {
           ])}
         />
       </Card>
+
+      {(order.reviewEntries?.length ?? 0) > 0 ? (
+        <Card className="mt-6 !p-5">
+          <OrderReviewHistory entries={order.reviewEntries ?? []} locale={locale} forDealer />
+        </Card>
+      ) : null}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { IsEmail, IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsIn, IsNumber, IsOptional, IsString, ValidateIf } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateOrderDto {
@@ -40,11 +40,17 @@ export class ShipOrderDto {
 }
 
 export class UpdateShipmentDto {
+  @ValidateIf((dto: UpdateShipmentDto) => dto.deliveryStatus !== 'PREPARING')
   @IsString()
-  courierName: string;
+  courierName?: string;
 
+  @ValidateIf((dto: UpdateShipmentDto) => dto.deliveryStatus !== 'PREPARING')
   @IsString()
-  trackingNo: string;
+  trackingNo?: string;
+
+  @ValidateIf((dto: UpdateShipmentDto) => dto.deliveryStatus === 'PREPARING')
+  @IsString()
+  note?: string;
 
   @IsString()
   @IsIn(['PREPARING', 'IN_TRANSIT', 'DELIVERED'])

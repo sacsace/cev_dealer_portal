@@ -322,12 +322,18 @@ export const ordersApi = {
     }),
   updateShipment: (
     id: string,
-    data: { courierName: string; trackingNo: string; deliveryStatus: string },
+    data: {
+      deliveryStatus: string;
+      courierName?: string;
+      trackingNo?: string;
+      note?: string;
+    },
   ) =>
     apiFetch<Order>(`/orders/${id}/shipment`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
+  remove: (id: string) => apiFetch<{ message: string }>(`/orders/${id}`, { method: 'DELETE' }),
 };
 
 export const jobCardsApi = {
@@ -805,6 +811,20 @@ export interface OrderInvoice {
   createdAt?: string;
 }
 
+export interface OrderReviewEntry {
+  id: string;
+  action: string;
+  status?: string | null;
+  deliveryStatus?: string | null;
+  courierName?: string | null;
+  trackingNo?: string | null;
+  note?: string | null;
+  authorId?: string | null;
+  authorName: string;
+  authorRole: string;
+  createdAt: string;
+}
+
 export interface Order {
   id: string;
   orderNo: string;
@@ -823,6 +843,7 @@ export interface Order {
   dealer?: { dealerName: string; dealerCode: string };
   shipment?: OrderShipment;
   invoice?: OrderInvoice | null;
+  reviewEntries?: OrderReviewEntry[];
 }
 
 export interface JobCardFile {

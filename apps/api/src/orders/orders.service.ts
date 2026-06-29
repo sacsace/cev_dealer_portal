@@ -3,7 +3,7 @@ import { AuditAction, OrderStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../common/services/audit.service';
 import { CartService } from '../cart/cart.service';
-import { getUploadRoot } from '../common/utils/file-storage.util';
+import { getUploadRoot, deleteStoredFile } from '../common/utils/file-storage.util';
 import { CreateOrderDto, RejectOrderDto, ShipOrderDto, UpdateShipmentDto } from './dto/order.dto';
 import {
   buildProformaInvoiceNo,
@@ -19,6 +19,53 @@ export class OrdersService {
     private audit: AuditService,
     private cartService: CartService,
   ) {}
+
+  private readonly orderDetailInclude = {
+    dealer: true,
+    items: { include: { part: true } },
+    shipment: true,
+    invoice: true,
+    reviewEntries: {
+      orderBy: { createdAt: 'desc' as const },
+    },
+  };
+
+  private async getActorName(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+    return user?.name ?? 'Admin';
+  }
+
+  private async createOrderReviewEntry(
+    orderId: string,
+    actor: { sub: string; role: UserRole },
+    data: {
+      action: 'APPROVED' | 'REJECTED' | 'SHIPMENT_UPDATED';
+      status?: OrderStatus;
+      deliveryStatus?: string;
+      courierName?: string;
+      trackingNo?: string;
+      note?: string;
+    },
+  ) {
+    const authorName = await this.getActorName(actor.sub);
+    await this.prisma.orderReviewEntry.create({
+      data: {
+        orderId,
+        action: data.action,
+        status: data.status,
+        deliveryStatus: data.deliveryStatus,
+        courierName: data.courierName,
+        trackingNo: data.trackingNo,
+        note: data.note,
+        authorId: actor.sub,
+        authorName,
+        authorRole: actor.role,
+      },
+    });
+  }
 
   async findAll(
     user: { sub: string; role: UserRole; dealerId?: string },
@@ -81,12 +128,7 @@ export class OrdersService {
   async findOne(id: string, user: { role: UserRole; dealerId?: string }) {
     const order = await this.prisma.order.findUnique({
       where: { id },
-      include: {
-        dealer: true,
-        items: { include: { part: true } },
-        shipment: true,
-        invoice: true,
-      },
+      include: this.orderDetailInclude,
     });
 
     if (!order) throw new NotFoundException('Order not found');
@@ -245,6 +287,11 @@ export class OrdersService {
       ipAddress: ip,
     });
 
+    await this.createOrderReviewEntry(id, actor, {
+      action: 'APPROVED',
+      status: OrderStatus.APPROVED,
+    });
+
     return this.findOne(id, actor);
   }
 
@@ -264,6 +311,12 @@ export class OrdersService {
       beforeData: before,
       afterData: { ...order, reason: dto.reason },
       ipAddress: ip,
+    });
+
+    await this.createOrderReviewEntry(id, actor, {
+      action: 'REJECTED',
+      status: OrderStatus.REJECTED,
+      note: dto.reason,
     });
 
     return this.findOne(id, actor);
@@ -301,6 +354,14 @@ export class OrdersService {
       throw new BadRequestException('Shipment can only be updated for approved orders');
     }
 
+    if (dto.deliveryStatus === 'PREPARING') {
+      if (!dto.note?.trim()) {
+        throw new BadRequestException('Comment is required when delivery status is Preparing');
+      }
+    } else if (!dto.courierName?.trim() || !dto.trackingNo?.trim()) {
+      throw new BadRequestException('Courier and tracking number are required');
+    }
+
     const statusMap: Record<UpdateShipmentDto['deliveryStatus'], OrderStatus> = {
       PREPARING: OrderStatus.PACKED,
       IN_TRANSIT: OrderStatus.ORDER_SHIPPED,
@@ -313,12 +374,13 @@ export class OrdersService {
     });
 
     const now = new Date();
+    const isPreparing = dto.deliveryStatus === 'PREPARING';
     const shipmentData = {
-      courierName: dto.courierName,
-      trackingNo: dto.trackingNo,
+      courierName: isPreparing ? null : dto.courierName!.trim(),
+      trackingNo: isPreparing ? null : dto.trackingNo!.trim(),
       deliveryStatus: dto.deliveryStatus,
       dispatchDate:
-        dto.deliveryStatus === 'PREPARING' ? undefined : before.shipment?.dispatchDate ?? now,
+        isPreparing ? null : before.shipment?.dispatchDate ?? now,
       deliveryDate: dto.deliveryStatus === 'DELIVERED' ? now : null,
     };
 
@@ -343,6 +405,41 @@ export class OrdersService {
       ipAddress: ip,
     });
 
+    await this.createOrderReviewEntry(id, actor, {
+      action: 'SHIPMENT_UPDATED',
+      status: statusMap[dto.deliveryStatus],
+      deliveryStatus: dto.deliveryStatus,
+      courierName: isPreparing ? undefined : dto.courierName!.trim(),
+      trackingNo: isPreparing ? undefined : dto.trackingNo!.trim(),
+      note: isPreparing ? dto.note!.trim() : undefined,
+    });
+
     return this.findOne(id, actor);
+  }
+
+  async remove(id: string, actor: { sub: string; role: UserRole }, ip?: string) {
+    if (actor.role !== UserRole.ROOT) {
+      throw new ForbiddenException('Only ROOT can delete orders');
+    }
+
+    const before = await this.findOne(id, actor);
+
+    if (before.invoice?.invoiceUrl) {
+      await deleteStoredFile(before.invoice.invoiceUrl);
+    }
+
+    await this.prisma.order.delete({ where: { id } });
+
+    await this.audit.log({
+      userId: actor.sub,
+      userRole: actor.role,
+      action: AuditAction.DELETE,
+      module: 'ORDERS',
+      targetId: id,
+      beforeData: before,
+      ipAddress: ip,
+    });
+
+    return { message: 'Order deleted' };
   }
 }

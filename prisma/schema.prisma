@@ -117,6 +117,7 @@ model User {
   auditLogs           AuditLog[]
   jobCardsCreated     JobCard[]            @relation("JobCardCreatedBy")
   jobCardReviewEntries JobCardReviewEntry[]
+  orderReviewEntries   OrderReviewEntry[]
   warrantyClaimsCreated WarrantyClaim[]    @relation("WarrantyClaimCreatedBy")
   warrantyClaimsHandled WarrantyClaim[]    @relation("WarrantyClaimHandledBy")
   ordersCreated       Order[]              @relation("OrderCreatedBy")
@@ -370,8 +371,30 @@ model Order {
   items     OrderItem[]
   shipment  Shipment?
   invoice   Invoice?
+  reviewEntries OrderReviewEntry[]
 
   @@map("orders")
+}
+
+model OrderReviewEntry {
+  id             String       @id @default(cuid())
+  orderId        String       @map("order_id")
+  action         String
+  status         OrderStatus?
+  deliveryStatus String?      @map("delivery_status")
+  courierName    String?      @map("courier_name")
+  trackingNo     String?      @map("tracking_no")
+  note           String?
+  authorId       String?      @map("author_id")
+  authorName     String       @map("author_name")
+  authorRole     String       @map("author_role")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  author User? @relation(fields: [authorId], references: [id])
+
+  @@index([orderId, createdAt])
+  @@map("order_review_entries")
 }
 
 model OrderItem {

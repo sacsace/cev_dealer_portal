@@ -22,6 +22,7 @@ import {
 } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
+import { OrderReviewHistory } from '@/components/order/order-review-history';
 
 const SHIPMENT_EDITABLE_STATUSES = ['APPROVED', 'PACKED', 'ORDER_SHIPPED', 'DELIVERED'];
 
@@ -43,7 +44,7 @@ export function OrderDetailDialog({
   onClose: () => void;
   onUpdated: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { alert, alertDialog } = useAlertDialog();
   const { confirm, confirmDialog } = useConfirmDialog();
   const [order, setOrder] = useState<Order | null>(null);
@@ -52,6 +53,7 @@ export function OrderDetailDialog({
   const [rejectReason, setRejectReason] = useState('');
   const [courierName, setCourierName] = useState('');
   const [trackingNo, setTrackingNo] = useState('');
+  const [shipmentComment, setShipmentComment] = useState('');
   const [deliveryStatus, setDeliveryStatus] = useState<DeliveryStatusKey>('PREPARING');
 
   const open = Boolean(orderId);
@@ -60,6 +62,7 @@ export function OrderDetailDialog({
     if (!orderId) {
       setOrder(null);
       setRejectReason('');
+      setShipmentComment('');
       return;
     }
 
@@ -70,9 +73,15 @@ export function OrderDetailDialog({
         setOrder(data);
         const shipment = data.shipment;
         const normalized = normalizeDeliveryStatus(shipment?.deliveryStatus, data.status);
-        setCourierName(shipment?.courierName ?? '');
-        setTrackingNo(shipment?.trackingNo ?? '');
         setDeliveryStatus(normalized ?? 'PREPARING');
+        setShipmentComment('');
+        if (normalized === 'PREPARING') {
+          setCourierName('');
+          setTrackingNo('');
+        } else {
+          setCourierName(shipment?.courierName ?? '');
+          setTrackingNo(shipment?.trackingNo ?? '');
+        }
       })
       .catch(() => setOrder(null))
       .finally(() => setLoading(false));
@@ -138,7 +147,14 @@ export function OrderDetailDialog({
 
   async function handleSaveShipment() {
     if (!order) return;
-    if (!courierName.trim() || !trackingNo.trim()) {
+    const isPreparing = deliveryStatus === 'PREPARING';
+
+    if (isPreparing) {
+      if (!shipmentComment.trim()) {
+        await alert({ message: t('admin.orderShipmentCommentRequired'), variant: 'info' });
+        return;
+      }
+    } else if (!courierName.trim() || !trackingNo.trim()) {
       await alert({ message: t('admin.orderShipmentFieldsRequired'), variant: 'info' });
       return;
     }
@@ -146,15 +162,16 @@ export function OrderDetailDialog({
     setSaving(true);
     try {
       const updated = await ordersApi.updateShipment(order.id, {
-        courierName: courierName.trim(),
-        trackingNo: trackingNo.trim(),
         deliveryStatus,
+        ...(isPreparing
+          ? { note: shipmentComment.trim() }
+          : { courierName: courierName.trim(), trackingNo: trackingNo.trim() }),
       });
       setOrder(updated);
+      setShipmentComment('');
       onUpdated();
       await loadPendingOrderCount().catch(() => {});
       await alert({ message: t('admin.orderShipmentSaved'), variant: 'success' });
-      onClose();
     } catch (err) {
       await alert({
         message: err instanceof Error ? err.message : t('common.saveFailed'),
@@ -310,7 +327,16 @@ export function OrderDetailDialog({
                       <Select
                         label={t('admin.deliveryStatus')}
                         value={deliveryStatus}
-                        onChange={(e) => setDeliveryStatus(e.target.value as DeliveryStatusKey)}
+                        onChange={(e) => {
+                          const next = e.target.value as DeliveryStatusKey;
+                          setDeliveryStatus(next);
+                          if (next === 'PREPARING') {
+                            setCourierName('');
+                            setTrackingNo('');
+                          } else {
+                            setShipmentComment('');
+                          }
+                        }}
                       >
                         {DELIVERY_STATUS_OPTIONS.map((status) => (
                           <option key={status} value={status}>
@@ -318,32 +344,52 @@ export function OrderDetailDialog({
                           </option>
                         ))}
                       </Select>
-                      <Select
-                        label={t('admin.courier')}
-                        value={courierName}
-                        onChange={(e) => setCourierName(e.target.value)}
-                      >
-                        <option value="">{t('admin.selectCourier')}</option>
-                        {COURIER_OPTIONS.map((name) => (
-                          <option key={name} value={name}>
-                            {name}
-                          </option>
-                        ))}
-                      </Select>
-                      <div className="sm:col-span-2">
-                        <Input
-                          label={t('admin.trackingNo')}
-                          value={trackingNo}
-                          onChange={(e) => setTrackingNo(e.target.value)}
-                          placeholder={t('admin.trackingNoPlaceholder')}
-                        />
-                      </div>
+                      {deliveryStatus === 'PREPARING' ? (
+                        <div className="sm:col-span-2">
+                          <Textarea
+                            label={t('admin.orderShipmentComment')}
+                            value={shipmentComment}
+                            onChange={(e) => setShipmentComment(e.target.value)}
+                            placeholder={t('admin.orderShipmentCommentPlaceholder')}
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <Select
+                            label={t('admin.courier')}
+                            value={courierName}
+                            onChange={(e) => setCourierName(e.target.value)}
+                          >
+                            <option value="">{t('admin.selectCourier')}</option>
+                            {COURIER_OPTIONS.map((name) => (
+                              <option key={name} value={name}>
+                                {name}
+                              </option>
+                            ))}
+                          </Select>
+                          <div className="sm:col-span-2">
+                            <Input
+                              label={t('admin.trackingNo')}
+                              value={trackingNo}
+                              onChange={(e) => setTrackingNo(e.target.value)}
+                              placeholder={t('admin.trackingNoPlaceholder')}
+                            />
+                          </div>
+                        </>
+                      )}
                     </div>
                     <Button onClick={handleSaveShipment} disabled={saving}>
                       {t('admin.saveShipment')}
                     </Button>
                   </div>
                 )}
+
+                <div className="space-y-4 border-t border-[var(--border)] pt-6">
+                  <OrderReviewHistory
+                    entries={order.reviewEntries ?? []}
+                    locale={locale}
+                  />
+                </div>
               </div>
             )}
           </div>

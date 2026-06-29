@@ -2,10 +2,21 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ordersApi, type Order } from '@/lib/api';
+import { getSession, ordersApi, type Order } from '@/lib/api';
+import { loadPendingOrderCount } from '@/lib/order-events';
+import { canDeleteAdminOrder } from '@/lib/admin-access';
 import { normalizeDeliveryStatus } from '@/lib/delivery-status';
 import { nextSortState, sortByKey, type SortDirection } from '@/lib/table-sort';
-import { Card, DataTable, DeliveryStatusBadge, PageTitle, PortalSearchBar, StatusBadge } from '@/components/ui';
+import {
+  Card,
+  DataTable,
+  DeliveryStatusBadge,
+  PageTitle,
+  PortalSearchBar,
+  StatusBadge,
+  useConfirmDialog,
+} from '@/components/ui';
+import { AdminActionAlert, AdminTableDeleteButton } from '@/components/admin/admin-list-tools';
 import { AdminPageBody } from '@/components/admin/admin-page-shell';
 import { OrderDetailDialog } from '@/components/admin/order-detail-dialog';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -35,11 +46,15 @@ const ORDER_SORT_ACCESSORS: Record<string, (order: Order) => string | number> = 
 
 export default function AdminOrdersContent() {
   const { t } = useI18n();
+  const { confirm, confirmDialog } = useConfirmDialog();
   const searchParams = useSearchParams();
   const search = searchParams.get('search') ?? '';
+  const session = getSession();
+  const canDelete = canDeleteAdminOrder(session?.role);
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionError, setActionError] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [sort, setSort] = useState<{ key: string; direction: SortDirection }>({
     key: 'createdAt',
@@ -75,6 +90,24 @@ export default function AdminOrdersContent() {
     setSort((current) => nextSortState(current.key, current.direction, key));
   }
 
+  async function handleDelete(order: Order) {
+    if (!canDelete) return;
+    const ok = await confirm({ message: t('admin.deleteOrderConfirm') });
+    if (!ok) return;
+
+    setActionError('');
+    try {
+      await ordersApi.remove(order.id);
+      if (selectedOrderId === order.id) {
+        setSelectedOrderId(null);
+      }
+      await loadPendingOrderCount().catch(() => {});
+      await refreshOrders();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : t('admin.orderDeleteFailed'));
+    }
+  }
+
   return (
     <AdminPageBody>
       <PageTitle title={t('admin.orderMgmt')} subtitle={t('admin.orderSubtitle')} />
@@ -82,6 +115,8 @@ export default function AdminOrdersContent() {
       <Card className="mb-5 !p-4">
         <PortalSearchBar placeholder={t('orders.searchPlaceholder')} preserveParams={[]} />
       </Card>
+
+      {actionError ? <AdminActionAlert message={actionError} /> : null}
 
       {loading ? (
         <p className="text-sm text-[var(--text-tertiary)]">{t('common.loading')}</p>
@@ -127,6 +162,23 @@ export default function AdminOrdersContent() {
               order.shipment?.trackingNo ?? '—',
             ];
           })}
+          actions={
+            canDelete
+              ? (index) => {
+                  const order = sortedOrders[index];
+                  if (!order) return null;
+
+                  return (
+                    <AdminTableDeleteButton
+                      stopPropagation
+                      onClick={() => {
+                        void handleDelete(order);
+                      }}
+                    />
+                  );
+                }
+              : undefined
+          }
         />
       )}
 
@@ -135,6 +187,7 @@ export default function AdminOrdersContent() {
         onClose={() => setSelectedOrderId(null)}
         onUpdated={refreshOrders}
       />
+      {confirmDialog}
     </AdminPageBody>
   );
 }

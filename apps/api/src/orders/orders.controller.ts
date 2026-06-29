@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -127,5 +128,15 @@ export class OrdersController {
     @Req() req: Request,
   ) {
     return this.ordersService.updateShipment(id, dto, user, req.ip);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ROOT)
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() user: { sub: string; role: UserRole },
+    @Req() req: Request,
+  ) {
+    return this.ordersService.remove(id, user, req.ip);
   }
 }

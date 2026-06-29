@@ -106,6 +106,10 @@ export function canDeleteAdminJobCard(role: UserRole | string | null | undefined
   return role === 'ROOT';
 }
 
+export function canDeleteAdminOrder(role: UserRole | string | null | undefined): boolean {
+  return role === 'ROOT';
+}
+
 export function canViewAdminOrganizationStats(role: UserRole | string | null | undefined): boolean {
   return role === 'ROOT' || role === 'ADMIN';
 }
