@@ -371,6 +371,10 @@ export class JobCardsService {
     user: { sub: string; role: UserRole; dealerId?: string },
     ip?: string,
   ) {
+    if (user.role !== UserRole.DEALER && user.role !== UserRole.ROOT) {
+      throw new ForbiddenException('Only ROOT can delete job cards');
+    }
+
     const before = await this.findOne(id, user);
 
     const linkedClaims = await this.prisma.warrantyClaim.count({ where: { jobCardId: id } });

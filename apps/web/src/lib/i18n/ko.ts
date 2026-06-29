@@ -267,6 +267,11 @@ export const ko = {
     addImages: '이미지 선택',
     removeImage: '삭제',
     uploadFailed: '이미지 업로드에 실패했습니다.',
+    reviewHistory: '검토 댓글',
+    reviewHistoryHint: '관리자가 입력한 상태 변경 및 검토 내용입니다.',
+    noReviewHistory: '아직 검토 댓글이 없습니다.',
+    reviewObservation: '관찰 내용',
+    reviewRectification: '조치 내용',
   },
   jobCardStatus: {
     CREATED: '신규',

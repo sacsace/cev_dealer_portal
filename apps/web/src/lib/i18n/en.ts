@@ -267,6 +267,11 @@ export const en = {
     addImages: 'Choose Images',
     removeImage: 'Remove',
     uploadFailed: 'Failed to upload image.',
+    reviewHistory: 'Review comments',
+    reviewHistoryHint: 'Status updates and review notes from the admin team.',
+    noReviewHistory: 'No review comments yet.',
+    reviewObservation: 'Observation',
+    reviewRectification: 'Rectification',
   },
   jobCardStatus: {
     CREATED: 'New',

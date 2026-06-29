@@ -380,6 +380,7 @@ export { ConfirmDialog } from './confirm-dialog';
 export { useConfirmDialog } from './use-confirm-dialog';
 export { AlertDialog } from './alert-dialog';
 export { useAlertDialog } from './use-alert-dialog';
+export { ImagePreviewDialog } from './image-preview-dialog';
 export { PortalSearchBar } from './portal-search-bar';
 export { PortalStatusTabs } from './portal-status-tabs';
 export type { StatusTab } from './portal-status-tabs';

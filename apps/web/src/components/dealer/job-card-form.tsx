@@ -16,7 +16,8 @@ import {
   type ApiUser,
 } from '@/lib/api';
 import { loadJobCardCount } from '@/lib/job-card-events';
-import { Button, Input, Select, Textarea } from '@/components/ui';
+import { JobCardReviewHistory } from '@/components/job-card/job-card-review-history';
+import { Button, Input, Select, Textarea, ImagePreviewDialog } from '@/components/ui';
 import { useI18n } from '@/components/providers/i18n-provider';
 import { isValidVin, normalizeVin } from '@/lib/validation';
 import { getDealerJobCardDefaults } from '@/lib/dealer-profile';
@@ -560,11 +561,11 @@ export function JobCardForm({
                   key={file.id}
                   className="group relative overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)]"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <ImagePreviewDialog
                     src={resolveFileUrl(file.fileUrl)}
                     alt={file.fileName}
-                    className="aspect-square w-full object-cover"
+                    fileName={file.fileName}
+                    imageClassName="aspect-square w-full object-cover"
                   />
                   <button
                     type="button"
@@ -584,11 +585,11 @@ export function JobCardForm({
                   key={preview}
                   className="group relative overflow-hidden rounded-lg border border-dashed border-[var(--border)] bg-[var(--bg-secondary)]"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <ImagePreviewDialog
                     src={preview}
                     alt={pendingFiles[index]?.name ?? 'preview'}
-                    className="aspect-square w-full object-cover"
+                    fileName={pendingFiles[index]?.name}
+                    imageClassName="aspect-square w-full object-cover"
                   />
                   <button
                     type="button"
@@ -606,6 +607,16 @@ export function JobCardForm({
             </div>
           )}
         </div>
+
+        {isEdit ? (
+          <div className="md:col-span-2 lg:col-span-3 space-y-4 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--bg-secondary)]/45 p-4">
+            <JobCardReviewHistory
+              entries={jobCard?.reviewEntries ?? []}
+              locale={locale}
+              forDealer
+            />
+          </div>
+        ) : null}
       </div>
 
       {error && <p className="portal-alert portal-alert--error">{error}</p>}

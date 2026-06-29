@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { jobCardsApi, resolveFileUrl, type JobCard, type JobCardReviewEntry } from '@/lib/api';
-import { Button, Card, Select, Textarea, JobCardStatusBadge } from '@/components/ui';
+import { jobCardsApi, resolveFileUrl, type JobCard } from '@/lib/api';
+import { Button, Card, Select, Textarea, JobCardStatusBadge, ImagePreviewDialog } from '@/components/ui';
 import { JobCardProgressStepper } from '@/components/admin/job-card-progress-stepper';
+import { JobCardReviewHistory } from '@/components/job-card/job-card-review-history';
 import { formatDate } from '@/lib/utils';
 import { localizedLookupLabel, useLookupCatalog } from '@/lib/lookup-label';
 import { useI18n } from '@/components/providers/i18n-provider';
@@ -42,101 +43,6 @@ function ReadOnlyField({
         {value?.trim() ? value : '—'}
       </div>
     </div>
-  );
-}
-
-function formatDateTime(value: string, locale: string) {
-  return new Intl.DateTimeFormat(locale === 'ko' ? 'ko-KR' : 'en-IN', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
-}
-
-function ReviewHistory({
-  entries,
-  locale,
-}: {
-  entries: JobCardReviewEntry[];
-  locale: string;
-}) {
-  const { t } = useI18n();
-
-  return (
-    <>
-      <div>
-        <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">
-          {t('admin.jobCardReviewHistory')}
-        </h3>
-        <p className="mt-1 text-[13px] text-[var(--text-secondary)]">
-          {t('admin.jobCardReviewHistoryHint')}
-        </p>
-      </div>
-
-      {entries.length === 0 ? (
-        <p className="rounded-[var(--radius-md)] border border-dashed border-[var(--border)] bg-white/70 px-4 py-8 text-center text-[13px] text-[var(--text-secondary)]">
-          {t('admin.jobCardNoReviewHistory')}
-        </p>
-      ) : (
-        <ul className="space-y-4">
-          {entries.map((entry) => (
-            <li
-              key={entry.id}
-              className="relative overflow-hidden rounded-[var(--radius-md)] border border-[var(--border)] bg-white p-4 shadow-[var(--shadow-sm)]"
-            >
-              <span
-                aria-hidden
-                className="absolute inset-y-0 left-0 w-1 bg-[var(--text-primary)]/15"
-              />
-
-              <div className="mb-3 flex flex-wrap items-start justify-between gap-2 pl-2">
-                <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-[var(--text-primary)]">{entry.authorName}</p>
-                  <p className="text-[11px] text-[var(--text-tertiary)]">{entry.authorRole}</p>
-                </div>
-                <time className="shrink-0 rounded-full bg-[var(--bg-secondary)] px-2.5 py-1 text-[11px] text-[var(--text-tertiary)]">
-                  {formatDateTime(entry.createdAt, locale)}
-                </time>
-              </div>
-
-              {entry.status ? (
-                <div className="mb-3 pl-2">
-                  <JobCardStatusBadge status={entry.status} />
-                </div>
-              ) : null}
-
-              {(entry.observation?.trim() || entry.rectification?.trim()) && (
-                <div className="space-y-2 pl-2">
-                  {entry.observation?.trim() ? (
-                    <div className="rounded-[var(--radius-md)] bg-[var(--bg-secondary)]/70 px-3 py-2.5">
-                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
-                        {t('admin.jobCardAdminObservation')}
-                      </p>
-                      <p className="whitespace-pre-wrap text-[13px] text-[var(--text-secondary)]">
-                        {entry.observation}
-                      </p>
-                    </div>
-                  ) : null}
-
-                  {entry.rectification?.trim() ? (
-                    <div className="rounded-[var(--radius-md)] bg-[var(--bg-secondary)]/70 px-3 py-2.5">
-                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
-                        {t('admin.jobCardAdminRectification')}
-                      </p>
-                      <p className="whitespace-pre-wrap text-[13px] text-[var(--text-secondary)]">
-                        {entry.rectification}
-                      </p>
-                    </div>
-                  ) : null}
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
   );
 }
 
@@ -279,11 +185,11 @@ export function AdminJobCardDetail({
                   key={file.id}
                   className="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)]"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <ImagePreviewDialog
                     src={resolveFileUrl(file.fileUrl)}
                     alt={file.fileName}
-                    className="aspect-square w-full object-cover"
+                    fileName={file.fileName}
+                    imageClassName="aspect-square w-full object-cover"
                   />
                   <p className="truncate px-2 py-1 text-[11px] text-[var(--text-secondary)]">{file.fileName}</p>
                 </div>
@@ -358,7 +264,7 @@ export function AdminJobCardDetail({
       </Card>
 
       <Card className="space-y-4 overflow-hidden bg-[var(--bg-secondary)]/45 p-5">
-        <ReviewHistory entries={jobCard.reviewEntries ?? []} locale={locale} />
+        <JobCardReviewHistory entries={jobCard.reviewEntries ?? []} locale={locale} />
       </Card>
     </div>
   );

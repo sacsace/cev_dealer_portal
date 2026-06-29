@@ -135,7 +135,7 @@ export class JobCardsController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.DEALER, UserRole.ADMIN, UserRole.ROOT)
+  @Roles(UserRole.DEALER, UserRole.ROOT)
   remove(
     @Param('id') id: string,
     @CurrentUser() user: { sub: string; role: UserRole; dealerId?: string },

@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { jobCardsApi, type JobCard } from '@/lib/api';
+import { getSession, jobCardsApi, type JobCard } from '@/lib/api';
 import { loadJobCardCount } from '@/lib/job-card-events';
+import { canDeleteAdminJobCard } from '@/lib/admin-access';
 import { Button, DataTable, PageTitle, JobCardStatusBadge, useConfirmDialog } from '@/components/ui';
 import { AdminActionAlert, AdminTableDeleteButton } from '@/components/admin/admin-list-tools';
 import { AdminPageBody, AdminSearchBar } from '@/components/admin/admin-page-shell';
@@ -14,6 +15,8 @@ export default function AdminJobCardsPage() {
   const { t } = useI18n();
   const { confirm, confirmDialog } = useConfirmDialog();
   const router = useRouter();
+  const session = getSession();
+  const canDelete = canDeleteAdminJobCard(session?.role);
   const [items, setItems] = useState<JobCard[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -39,6 +42,7 @@ export default function AdminJobCardsPage() {
   }, [load]);
 
   async function handleDelete(item: JobCard) {
+    if (!canDelete) return;
     const ok = await confirm({ message: t('jobCard.deleteConfirm') });
     if (!ok) return;
 
@@ -92,19 +96,23 @@ export default function AdminJobCardsPage() {
             formatDate(j.jobCardDate),
             <JobCardStatusBadge key={`${j.id}-status`} status={j.status} />,
           ])}
-          actions={(index) => {
-            const item = items[index];
-            if (!item) return null;
+          actions={
+            canDelete
+              ? (index) => {
+                  const item = items[index];
+                  if (!item) return null;
 
-            return (
-              <AdminTableDeleteButton
-                stopPropagation
-                onClick={() => {
-                  void handleDelete(item);
-                }}
-              />
-            );
-          }}
+                  return (
+                    <AdminTableDeleteButton
+                      stopPropagation
+                      onClick={() => {
+                        void handleDelete(item);
+                      }}
+                    />
+                  );
+                }
+              : undefined
+          }
         />
       )}
 
