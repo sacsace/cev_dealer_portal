@@ -20,6 +20,7 @@
     "db:migrate:status": "prisma migrate status",
     "db:verify": "node scripts/verify-migrations.js",
     "db:migrate:all": "powershell -ExecutionPolicy Bypass -File scripts/db-migrate-all.ps1",
+    "db:verify:prod": "node scripts/verify-production-api.js",
     "db:push": "prisma db push",
     "db:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-db.ps1",
     "db:seed": "prisma db seed",

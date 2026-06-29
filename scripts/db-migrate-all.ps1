@@ -47,12 +47,15 @@ if ($env:RAILWAY_TOKEN -or $env:RAILWAY_API_TOKEN) {
 
 if (-not $railwayOk) {
   Write-Host ''
-  Write-Host 'Railway login required before step 4.' -ForegroundColor Yellow
-  Write-Host '  1) railway login'
-  Write-Host '  2) cd to repo root and run: railway link   (select api service)'
-  Write-Host '  3) re-run: .\scripts\db-migrate-all.ps1'
-  Write-Host ''
-  Write-Host 'Alternative: Railway dashboard -> api -> Redeploy (entrypoint runs migrate deploy automatically).' -ForegroundColor Yellow
+  Write-Host 'Railway CLI login required for direct migrate (step 4).' -ForegroundColor Yellow
+  Write-Host '  Option A — CLI:' -ForegroundColor Yellow
+  Write-Host '    railway login'
+  Write-Host '    railway link   (select api service)'
+  Write-Host '    npm run db:migrate:all'
+  Write-Host '  Option B — Redeploy (auto migrate on api start):' -ForegroundColor Yellow
+  Write-Host '    git push origin main  (GitHub deploy hook)'
+  Write-Host '    Railway dashboard -> api -> Redeploy (Clear build cache)'
+  Write-Host '  Then verify: npm run db:verify:prod' -ForegroundColor Yellow
   exit 1
 }
 
