@@ -20,7 +20,10 @@ export function PublicPageShell({
       <header className="login-header">
         <div className="flex items-center gap-4">
           <CevLogo href="/login" height={32} />
-          <Link href="/login" className="text-[13px] font-medium text-[var(--accent)] hover:underline">
+          <Link
+            href="/login"
+            className="shrink-0 whitespace-nowrap text-[13px] font-medium text-[var(--accent)] hover:underline"
+          >
             ← {t('common.login')}
           </Link>
         </div>

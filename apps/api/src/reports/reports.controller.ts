@@ -45,6 +45,16 @@ export class ReportsController {
     return this.reportsService.getClaimAnalysis(user, query);
   }
 
+  @Get('claims/handlers')
+  @Roles(UserRole.ROOT, UserRole.ADMIN)
+  @RequirePermission(PermissionModule.REPORTS, PermissionAction.VIEW)
+  getClaimHandlerStats(
+    @CurrentUser() user: { role: UserRole; dealerId?: string },
+    @Query() query: ReportQueryDto,
+  ) {
+    return this.reportsService.getClaimHandlerStats(user, query);
+  }
+
   @Get('export')
   @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.USER)
   @RequirePermission(PermissionModule.REPORTS, PermissionAction.EXPORT)

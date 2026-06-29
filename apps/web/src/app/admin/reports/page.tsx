@@ -6,6 +6,7 @@ import {
   dealersApi,
   reportsApi,
   type ClaimAnalysisReport,
+  type ClaimHandlerStatsReport,
   type Dealer,
   type OrderAnalysisReport,
   type ReportFilters,
@@ -42,6 +43,7 @@ export default function AdminReportsPage() {
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [orderAnalysis, setOrderAnalysis] = useState<OrderAnalysisReport | null>(null);
   const [claimAnalysis, setClaimAnalysis] = useState<ClaimAnalysisReport | null>(null);
+  const [claimHandlerStats, setClaimHandlerStats] = useState<ClaimHandlerStatsReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -54,18 +56,21 @@ export default function AdminReportsPage() {
     setLoading(true);
     setActionError('');
     try {
-      const [summaryRes, ordersRes, claimsRes] = await Promise.all([
+      const [summaryRes, ordersRes, claimsRes, handlersRes] = await Promise.all([
         reportsApi.summary(nextFilters),
         reportsApi.orderAnalysis(nextFilters),
         reportsApi.claimAnalysis(nextFilters),
+        reportsApi.claimHandlerStats(nextFilters),
       ]);
       setSummary(summaryRes);
       setOrderAnalysis(ordersRes);
       setClaimAnalysis(claimsRes);
+      setClaimHandlerStats(handlersRes);
     } catch (err) {
       setSummary(null);
       setOrderAnalysis(null);
       setClaimAnalysis(null);
+      setClaimHandlerStats(null);
       setActionError(err instanceof Error ? err.message : t('common.saveFailed'));
     } finally {
       setLoading(false);
@@ -369,6 +374,45 @@ export default function AdminReportsPage() {
               />
             </section>
           </div>
+
+          {claimHandlerStats ? (
+            <section className="mb-8">
+              <h2 className="portal-section-title">{t('admin.reportClaimHandlersTitle')}</h2>
+              <p className="mb-4 text-[13px] text-[var(--text-secondary)]">
+                {t('admin.reportClaimHandlersDescription')}
+              </p>
+              <div className="portal-kpi-grid portal-kpi-grid--4 mb-4">
+                {[
+                  { label: t('admin.reportHandlerCount'), value: claimHandlerStats.summary.handlerCount },
+                  { label: t('admin.reportTotalHandled'), value: claimHandlerStats.summary.totalHandled },
+                  { label: t('admin.reportTotalApproved'), value: claimHandlerStats.summary.totalApproved },
+                  { label: t('admin.reportTotalRejected'), value: claimHandlerStats.summary.totalRejected },
+                ].map((item) => (
+                  <KpiCard key={item.label} label={item.label} value={item.value} />
+                ))}
+              </div>
+              <DataTable
+                columns={[
+                  t('admin.reportHandlerName'),
+                  t('admin.userRole'),
+                  t('admin.reportHandlerApproved'),
+                  t('admin.reportHandlerRejected'),
+                  t('admin.reportHandlerTotal'),
+                ]}
+                rows={
+                  claimHandlerStats.handlers.length === 0
+                    ? [[t('common.noRecords'), '—', '—', '—', '—']]
+                    : claimHandlerStats.handlers.map((row) => [
+                        `${row.name} (${row.email})`,
+                        row.role,
+                        row.approved,
+                        row.rejected,
+                        row.total,
+                      ])
+                }
+              />
+            </section>
+          ) : null}
 
           <section>
             <h2 className="portal-section-title">

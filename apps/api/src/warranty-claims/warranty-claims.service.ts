@@ -194,6 +194,8 @@ export class WarrantyClaimsService {
       data: {
         status: WarrantyClaimStatus.APPROVED,
         remark: dto.remark,
+        handledById: actor.sub,
+        handledAt: new Date(),
       },
     });
 
@@ -223,6 +225,8 @@ export class WarrantyClaimsService {
       data: {
         status: WarrantyClaimStatus.REJECTED,
         rejectReason: dto.rejectReason,
+        handledById: actor.sub,
+        handledAt: new Date(),
       },
     });
 

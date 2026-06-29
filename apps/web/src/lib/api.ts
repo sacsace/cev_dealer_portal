@@ -512,6 +512,48 @@ export interface ClaimAnalysisReport {
   }>;
 }
 
+export interface MailSettings {
+  enabled: boolean;
+  from: string;
+  fromName: string;
+  smtpHost: string;
+  smtpPort: number;
+  smtpSecure: boolean;
+  smtpUser: string;
+  smtpPasswordSet: boolean;
+}
+
+export type UpdateMailSettingsPayload = Partial<
+  MailSettings & { smtpPassword?: string }
+>;
+
+export interface TrafficStatsReport {
+  filters: { from: string | null; to: string | null };
+  summary: { totalVisits: number; uniquePaths: number };
+  byPath: Array<{ path: string; count: number }>;
+  byRole: Array<{ role: string; count: number }>;
+  byDay: Array<{ day: string; count: number }>;
+}
+
+export interface ClaimHandlerStatsReport {
+  filters: ReportFilters & { dealerId?: string | null };
+  summary: {
+    handlerCount: number;
+    totalHandled: number;
+    totalApproved: number;
+    totalRejected: number;
+  };
+  handlers: Array<{
+    userId: string;
+    name: string;
+    email: string;
+    role: string;
+    approved: number;
+    rejected: number;
+    total: number;
+  }>;
+}
+
 function buildReportQuery(filters: ReportFilters = {}) {
   const params = new URLSearchParams();
   if (filters.from) params.set('from', filters.from);
@@ -521,6 +563,27 @@ function buildReportQuery(filters: ReportFilters = {}) {
   return query ? `?${query}` : '';
 }
 
+export const settingsApi = {
+  getMail: () => apiFetch<MailSettings>('/settings/mail'),
+  updateMail: (data: UpdateMailSettingsPayload) =>
+    apiFetch<MailSettings>('/settings/mail', { method: 'PATCH', body: JSON.stringify(data) }),
+  testMail: (to: string) =>
+    apiFetch<{ message: string }>('/settings/mail/test', {
+      method: 'POST',
+      body: JSON.stringify({ to }),
+    }),
+  getTraffic: (filters?: ReportFilters) =>
+    apiFetch<TrafficStatsReport>(`/settings/traffic${buildReportQuery(filters)}`),
+};
+
+export const analyticsApi = {
+  recordVisit: (path: string, referrer?: string) =>
+    apiFetch<{ ok: boolean }>('/analytics/visits', {
+      method: 'POST',
+      body: JSON.stringify({ path, referrer }),
+    }),
+};
+
 export const reportsApi = {
   summary: (filters?: ReportFilters) =>
     apiFetch<ReportSummary>(`/reports/summary${buildReportQuery(filters)}`),
@@ -528,6 +591,8 @@ export const reportsApi = {
     apiFetch<OrderAnalysisReport>(`/reports/orders/analysis${buildReportQuery(filters)}`),
   claimAnalysis: (filters?: ReportFilters) =>
     apiFetch<ClaimAnalysisReport>(`/reports/claims/analysis${buildReportQuery(filters)}`),
+  claimHandlerStats: (filters?: ReportFilters) =>
+    apiFetch<ClaimHandlerStatsReport>(`/reports/claims/handlers${buildReportQuery(filters)}`),
   exportExcel: async (type: 'summary' | 'orders' | 'claims', filters?: ReportFilters) => {
     const params = new URLSearchParams({ type });
     if (filters?.from) params.set('from', filters.from);

@@ -13,6 +13,8 @@ import { WarrantyClaimsModule } from './warranty-claims/warranty-claims.module';
 import { LookupModule } from './lookup/lookup.module';
 import { UsersModule } from './users/users.module';
 import { ReportsModule } from './reports/reports.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { SettingsModule } from './settings/settings.module';
 import { CommonModule } from './common/common.module';
 import { SecurityHeadersMiddleware } from './common/middleware/security-headers.middleware';
 
@@ -31,6 +33,8 @@ import { SecurityHeadersMiddleware } from './common/middleware/security-headers.
     LookupModule,
     UsersModule,
     ReportsModule,
+    AnalyticsModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

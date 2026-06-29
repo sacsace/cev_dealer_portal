@@ -1,0 +1,145 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { settingsApi, type TrafficStatsReport } from '@/lib/api';
+import { Button, Card, Input, KpiCard } from '@/components/ui';
+import { AdminActionAlert } from '@/components/admin/admin-list-tools';
+import { ReportBarChart } from '@/components/admin/report-bar-chart';
+import { useI18n } from '@/components/providers/i18n-provider';
+
+function defaultDateRange() {
+  const to = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - 30);
+  return {
+    from: from.toISOString().slice(0, 10),
+    to: to.toISOString().slice(0, 10),
+  };
+}
+
+export default function AdminSettingsTrafficPage() {
+  const { t } = useI18n();
+  const initialRange = useMemo(() => defaultDateRange(), []);
+
+  const [trafficFrom, setTrafficFrom] = useState(initialRange.from);
+  const [trafficTo, setTrafficTo] = useState(initialRange.to);
+  const [traffic, setTraffic] = useState<TrafficStatsReport | null>(null);
+  const [loadingTraffic, setLoadingTraffic] = useState(true);
+  const [actionError, setActionError] = useState('');
+
+  const loadTraffic = useCallback(async (from: string, to: string) => {
+    setLoadingTraffic(true);
+    setActionError('');
+    try {
+      const data = await settingsApi.getTraffic({ from, to });
+      setTraffic(data);
+    } catch (err) {
+      setTraffic(null);
+      setActionError(err instanceof Error ? err.message : t('common.saveFailed'));
+    } finally {
+      setLoadingTraffic(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    loadTraffic(initialRange.from, initialRange.to);
+  }, [initialRange.from, initialRange.to, loadTraffic]);
+
+  const trafficByDay = (traffic?.byDay ?? []).map((row) => ({
+    key: row.day,
+    label: row.day,
+    count: row.count,
+    amount: 0,
+  }));
+
+  return (
+    <>
+      {actionError ? <AdminActionAlert message={actionError} /> : null}
+
+      <Card className="!p-6">
+        <h2 className="mb-1 text-base font-semibold text-[var(--text-primary)]">
+          {t('admin.settingsTrafficTitle')}
+        </h2>
+        <p className="mb-5 text-[13px] text-[var(--text-secondary)]">
+          {t('admin.settingsTrafficDescription')}
+        </p>
+
+        <div className="mb-5 flex flex-wrap items-end gap-3">
+          <Input
+            label={t('admin.reportDateFrom')}
+            type="date"
+            value={trafficFrom}
+            onChange={(e) => setTrafficFrom(e.target.value)}
+          />
+          <Input
+            label={t('admin.reportDateTo')}
+            type="date"
+            value={trafficTo}
+            onChange={(e) => setTrafficTo(e.target.value)}
+          />
+          <Button type="button" onClick={() => loadTraffic(trafficFrom, trafficTo)}>
+            {t('common.search')}
+          </Button>
+        </div>
+
+        {loadingTraffic ? (
+          <p className="text-sm text-[var(--text-tertiary)]">{t('common.loading')}</p>
+        ) : traffic ? (
+          <div className="space-y-6">
+            <div className="portal-kpi-grid portal-kpi-grid--2">
+              <KpiCard label={t('admin.settingsTotalVisits')} value={traffic.summary.totalVisits} />
+              <KpiCard label={t('admin.settingsUniquePaths')} value={traffic.summary.uniquePaths} />
+            </div>
+
+            {traffic.byRole.length > 0 ? (
+              <div>
+                <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
+                  {t('admin.settingsVisitsByRole')}
+                </h3>
+                <ul className="space-y-2 text-[13px] text-[var(--text-secondary)]">
+                  {traffic.byRole.map((row) => (
+                    <li
+                      key={row.role}
+                      className="flex justify-between gap-4 border-b border-[var(--border)] pb-2"
+                    >
+                      <span className="text-[var(--text-primary)]">{row.role || '—'}</span>
+                      <span className="shrink-0 font-medium">{row.count}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            <div>
+              <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
+                {t('admin.settingsVisitsByDay')}
+              </h3>
+              <ReportBarChart rows={trafficByDay} />
+            </div>
+
+            <div>
+              <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
+                {t('admin.settingsTopPaths')}
+              </h3>
+              <ul className="space-y-2 text-[13px] text-[var(--text-secondary)]">
+                {traffic.byPath.length === 0 ? (
+                  <li>{t('admin.settingsNoTraffic')}</li>
+                ) : (
+                  traffic.byPath.map((row) => (
+                    <li
+                      key={row.path}
+                      className="flex justify-between gap-4 border-b border-[var(--border)] pb-2"
+                    >
+                      <span className="truncate text-[var(--text-primary)]">{row.path}</span>
+                      <span className="shrink-0 font-medium">{row.count}</span>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          </div>
+        ) : null}
+      </Card>
+    </>
+  );
+}

@@ -12,6 +12,7 @@ import {
   Wrench,
   ShieldCheck,
   BarChart3,
+  Settings,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -149,6 +150,19 @@ export const adminNavGroups: AdminNavGroup[] = [
         href: '/admin/reports',
         icon: BarChart3,
         match: (p) => p.startsWith('/admin/reports'),
+      },
+    ],
+  },
+  {
+    key: 'system',
+    labelKey: 'admin.navSystem',
+    items: [
+      {
+        key: 'settings',
+        labelKey: 'admin.settings',
+        href: '/admin/settings',
+        icon: Settings,
+        match: (p) => p.startsWith('/admin/settings'),
       },
     ],
   },

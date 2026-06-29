@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  AuditAction,
   OrderStatus,
   Prisma,
   UserRole,
@@ -340,6 +341,69 @@ export class ReportsService {
         reasonForClaim: claim.reasonForClaim,
         createdAt: claim.createdAt,
       })),
+    };
+  }
+
+  async getClaimHandlerStats(user: ReportUser, query: ReportQueryDto) {
+    const handledAt = this.buildDateRange(query.from, query.to);
+
+    const auditLogs = await this.prisma.auditLog.findMany({
+      where: {
+        module: 'WARRANTY_CLAIMS',
+        action: { in: [AuditAction.APPROVE, AuditAction.REJECT] },
+        ...(handledAt ? { createdAt: handledAt } : {}),
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true, role: true } },
+      },
+    });
+
+    type HandlerRow = {
+      userId: string;
+      name: string;
+      email: string;
+      role: string;
+      approved: number;
+      rejected: number;
+      total: number;
+    };
+
+    const map = new Map<string, HandlerRow>();
+
+    for (const log of auditLogs) {
+      if (!log.userId || !log.user) continue;
+      const row =
+        map.get(log.userId) ??
+        {
+          userId: log.userId,
+          name: log.user.name,
+          email: log.user.email,
+          role: log.user.role,
+          approved: 0,
+          rejected: 0,
+          total: 0,
+        };
+      if (log.action === AuditAction.APPROVE) row.approved += 1;
+      if (log.action === AuditAction.REJECT) row.rejected += 1;
+      row.total += 1;
+      map.set(log.userId, row);
+    }
+
+    const handlers = [...map.values()].sort((a, b) => b.total - a.total);
+
+    return {
+      filters: {
+        from: query.from ?? null,
+        to: query.to ?? null,
+        dealerId: this.resolveDealerId(user, query.dealerId) ?? null,
+      },
+      summary: {
+        handlerCount: handlers.length,
+        totalHandled: handlers.reduce((sum, row) => sum + row.total, 0),
+        totalApproved: handlers.reduce((sum, row) => sum + row.approved, 0),
+        totalRejected: handlers.reduce((sum, row) => sum + row.rejected, 0),
+      },
+      handlers,
     };
   }
 

@@ -36,9 +36,6 @@ export class PermissionsGuard implements CanActivate {
     }
 
     if (user.role === UserRole.ADMIN) {
-      if (required.module === PermissionModule.SETTINGS && required.action !== PermissionAction.VIEW) {
-        throw new ForbiddenException('Cannot modify system settings');
-      }
       return true;
     }
 

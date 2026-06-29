@@ -150,6 +150,7 @@ export function OrderDetailDialog({
       setOrder(updated);
       onUpdated();
       await alert({ message: t('admin.orderShipmentSaved'), variant: 'success' });
+      onClose();
     } catch (err) {
       await alert({
         message: err instanceof Error ? err.message : t('common.saveFailed'),

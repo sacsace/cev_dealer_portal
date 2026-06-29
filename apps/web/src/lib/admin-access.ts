@@ -20,6 +20,7 @@ export const ADMIN_ALLOWED_NAV_ITEM_KEYS = [
   'types',
   'claims',
   'reports',
+  'settings',
 ] as const;
 
 const USER_ALLOWED_PATH_PREFIXES = [
@@ -42,6 +43,7 @@ const ADMIN_ALLOWED_PATH_PREFIXES = [
   '/admin/types',
   '/admin/claims',
   '/admin/reports',
+  '/admin/settings',
 ];
 
 function isStaffRole(role: UserRole | string | null | undefined): role is 'ROOT' | 'ADMIN' | 'USER' {

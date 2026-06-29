@@ -54,8 +54,8 @@ export function CevLogo({
       <Link
         href={href}
         className={cn(
-          'inline-flex w-full max-w-full shrink-0 items-center',
-          variant === 'sidebar' && 'justify-center',
+          'inline-flex shrink-0 items-center',
+          variant === 'sidebar' ? 'w-full max-w-full justify-center' : 'w-auto',
           className,
         )}
       >
