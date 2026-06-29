@@ -1,11 +1,13 @@
 # Apply Prisma schema to Railway Postgres (migrate + seed).
-# Prerequisites: railway login, then railway link (select api service).
+# Prerequisites: railway login, then railway link (api service recommended).
 param(
   [switch]$MigrateOnly,
   [switch]$SeedOnly
 )
 
 $ErrorActionPreference = 'Stop'
+$Root = Split-Path $PSScriptRoot -Parent
+Set-Location $Root
 
 function Require-Railway {
   if (-not (Get-Command railway -ErrorAction SilentlyContinue)) {
@@ -25,29 +27,57 @@ function Require-Railway {
   Write-Host "Railway: $whoami" -ForegroundColor Green
 }
 
+function Get-RailwayPublicDatabaseUrl {
+  $linkedJson = railway variables --json 2>&1
+  if ($LASTEXITCODE -ne 0) {
+    throw 'Failed to read Railway variables. Run `railway link` in this repo first.'
+  }
+
+  $linked = $linkedJson | ConvertFrom-Json
+  if ($linked.DATABASE_PUBLIC_URL) {
+    return $linked.DATABASE_PUBLIC_URL
+  }
+
+  $projectId = $linked.RAILWAY_PROJECT_ID
+  $environment = $linked.RAILWAY_ENVIRONMENT_NAME
+  if (-not $projectId -or -not $environment) {
+    throw 'Linked Railway project/environment not found.'
+  }
+
+  $postgresJson = railway variables --service Postgres --project $projectId --environment $environment --json 2>&1
+  if ($LASTEXITCODE -ne 0) {
+    throw 'Failed to read Postgres service variables.'
+  }
+
+  $postgres = $postgresJson | ConvertFrom-Json
+  if (-not $postgres.DATABASE_PUBLIC_URL) {
+    throw 'DATABASE_PUBLIC_URL not found on Postgres service.'
+  }
+
+  return $postgres.DATABASE_PUBLIC_URL
+}
+
 Require-Railway
 
-$envBlock = @'
-if [ -z "$DIRECT_DATABASE_URL" ]; then
-  if [ -n "$DATABASE_UNPOOLED_URL" ]; then export DIRECT_DATABASE_URL="$DATABASE_UNPOOLED_URL"
-  else export DIRECT_DATABASE_URL="$DATABASE_URL"; fi
-fi
-'@
+$publicUrl = Get-RailwayPublicDatabaseUrl
+$env:DATABASE_URL = $publicUrl
+$env:DIRECT_DATABASE_URL = $publicUrl
+
+Write-Host 'Using Railway DATABASE_PUBLIC_URL for Prisma migrate.' -ForegroundColor Gray
 
 if (-not $SeedOnly) {
   Write-Host 'Applying migrations (prisma migrate deploy)...' -ForegroundColor Cyan
-  railway run sh -lc "$envBlock && npx prisma migrate deploy"
+  npx prisma migrate deploy
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
   Write-Host 'Migrations applied.' -ForegroundColor Green
 }
 
 if (-not $MigrateOnly) {
   Write-Host 'Seeding demo data...' -ForegroundColor Cyan
-  railway run sh -lc "$envBlock && npm run db:seed"
+  npm run db:seed
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
   Write-Host 'Seed completed.' -ForegroundColor Green
 }
 
 Write-Host ''
 Write-Host 'Done. Refresh Postgres -> Data tab to see tables.' -ForegroundColor Cyan
-Write-Host 'Login: root / admin123  |  admin@cev.local / Admin@123  |  FH001 / Dealer@123' -ForegroundColor Yellow
