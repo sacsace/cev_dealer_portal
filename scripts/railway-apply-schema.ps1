@@ -12,9 +12,14 @@ function Require-Railway {
     Write-Host 'Install Railway CLI: npm i -g @railway/cli' -ForegroundColor Red
     exit 1
   }
+  if ($env:RAILWAY_TOKEN -or $env:RAILWAY_API_TOKEN) {
+    Write-Host 'Railway: using RAILWAY_TOKEN / RAILWAY_API_TOKEN from environment.' -ForegroundColor Green
+    return
+  }
   $whoami = railway whoami 2>&1
   if ($LASTEXITCODE -ne 0) {
     Write-Host 'Run `railway login` first, then `railway link` in this repo (select the api service).' -ForegroundColor Red
+    Write-Host 'Or set RAILWAY_TOKEN for non-interactive use: https://docs.railway.com/guides/cli' -ForegroundColor Yellow
     exit 1
   }
   Write-Host "Railway: $whoami" -ForegroundColor Green
