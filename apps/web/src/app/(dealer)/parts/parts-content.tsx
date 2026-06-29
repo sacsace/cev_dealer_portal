@@ -7,7 +7,18 @@ import { getPartImageUrl } from '@/lib/part-image';
 import { Button, Card, DataTable, Input, PageTitle, Select, useAlertDialog } from '@/components/ui';
 import { cn, formatCurrency } from '@/lib/utils';
 import { useI18n } from '@/components/providers/i18n-provider';
-import { PartDetailDialog } from '@/components/dealer/part-detail-dialog';
+
+function buildPartDetailPath(partId: string, searchParams: URLSearchParams) {
+  const params = new URLSearchParams();
+  const search = searchParams.get('search');
+  const modelId = searchParams.get('modelId');
+  const categoryId = searchParams.get('categoryId');
+  if (search) params.set('search', search);
+  if (modelId) params.set('modelId', modelId);
+  if (categoryId) params.set('categoryId', categoryId);
+  const qs = params.toString();
+  return qs ? `/parts/${partId}?${qs}` : `/parts/${partId}`;
+}
 
 function StockBadge({ inStock, label }: { inStock: boolean; label: string }) {
   return (
@@ -91,7 +102,6 @@ export default function PartsPageContent() {
   const [categoryId, setCategoryId] = useState(searchParams.get('categoryId') ?? '');
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
-  const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
 
   const hasActiveFilters = Boolean(
     searchParams.get('search') || searchParams.get('modelId') || searchParams.get('categoryId'),
@@ -146,8 +156,8 @@ export default function PartsPageContent() {
     await alert({ message: t('common.addedToCart'), variant: 'success' });
   }
 
-  function openPartDetail(partId: string) {
-    setSelectedPartId(partId);
+  function goToPartDetail(partId: string) {
+    router.push(buildPartDetailPath(partId, searchParams));
   }
 
   const emptyMessage =
@@ -158,7 +168,6 @@ export default function PartsPageContent() {
   return (
     <div className="w-full min-w-0">
       {alertDialog}
-      <PartDetailDialog partId={selectedPartId} onClose={() => setSelectedPartId(null)} />
       <div className="parts-page-shell">
         <div className="parts-page-heading">
           <PageTitle title={t('parts.title')} subtitle={t('parts.subtitle')} className="mb-0" />
@@ -168,14 +177,35 @@ export default function PartsPageContent() {
           <h3 className="parts-filter-title">{t('common.filters')}</h3>
           <form onSubmit={handleSearch} className="space-y-4">
             <Input label={t('common.keyword')} value={search} onChange={(e) => setSearch(e.target.value)} />
-            <Select label={t('parts.model')} value={modelId} onChange={(e) => setModelId(e.target.value)}>
-              <option value="">{t('common.allModels')}</option>
-              {models.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.modelName}
-                </option>
-              ))}
-            </Select>
+            <div>
+              <p className="parts-filter-list-label">{t('parts.model')}</p>
+              <div className="parts-filter-list" role="listbox" aria-label={t('parts.model')}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={!modelId}
+                  className={cn('parts-filter-list__item', !modelId && 'parts-filter-list__item--active')}
+                  onClick={() => setModelId('')}
+                >
+                  {t('common.allModels')}
+                </button>
+                {models.map((model) => (
+                  <button
+                    key={model.id}
+                    type="button"
+                    role="option"
+                    aria-selected={modelId === model.id}
+                    className={cn(
+                      'parts-filter-list__item',
+                      modelId === model.id && 'parts-filter-list__item--active',
+                    )}
+                    onClick={() => setModelId(model.id)}
+                  >
+                    {model.modelName}
+                  </button>
+                ))}
+              </div>
+            </div>
             <Select label={t('parts.category')} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
               <option value="">{t('common.allCategories')}</option>
               {categories.map((c) => (
@@ -235,7 +265,7 @@ export default function PartsPageContent() {
                   key={part.id}
                   part={part}
                   onAddToCart={addToCart}
-                  onOpenDetail={openPartDetail}
+                  onOpenDetail={goToPartDetail}
                   detailLabel={t('parts.detail')}
                   cartLabel={t('parts.addToCart')}
                   availableLabel={t('common.available')}
@@ -251,7 +281,7 @@ export default function PartsPageContent() {
                     key={part.id}
                     part={part}
                     onAddToCart={addToCart}
-                    onOpenDetail={openPartDetail}
+                    onOpenDetail={goToPartDetail}
                     detailLabel={t('parts.detail')}
                     cartLabel={t('parts.addToCart')}
                     availableLabel={t('common.available')}
@@ -265,7 +295,7 @@ export default function PartsPageContent() {
                   rowIds={parts.map((part) => part.id)}
                   onRowClick={(index) => {
                     const part = parts[index];
-                    if (part) openPartDetail(part.id);
+                    if (part) goToPartDetail(part.id);
                   }}
                   columns={[
                     t('parts.partNo'),
@@ -291,7 +321,7 @@ export default function PartsPageContent() {
 
                     return (
                       <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Button type="button" variant="outline" onClick={() => openPartDetail(part.id)}>
+                        <Button type="button" variant="outline" onClick={() => goToPartDetail(part.id)}>
                           {t('parts.detail')}
                         </Button>
                         <Button type="button" onClick={() => addToCart(part.id)} disabled={part.stockQuantity <= 0}>

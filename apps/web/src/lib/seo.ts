@@ -51,6 +51,7 @@ export type SeoPageKey =
   | 'dealerCart'
   | 'dealerCheckout'
   | 'dealerOrders'
+  | 'dealerOrderDetail'
   | 'dealerJobCards'
   | 'dealerJobCardNew'
   | 'dealerJobCardEdit'

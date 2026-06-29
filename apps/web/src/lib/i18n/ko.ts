@@ -208,7 +208,17 @@ export const ko = {
     track: '배송 추적',
     proformaInvoice: '프로포마 인보이스',
     downloadProforma: 'PDF 다운로드',
+    empty: '주문 내역이 없습니다.',
     emptyTab: '해당 상태의 주문이 없습니다.',
+    stageConfirmation: '주문확인',
+    stagePreparing: '배송준비',
+    stageCompleted: '배송완료',
+    detailSubtitle: '주문 내역 및 배송 상태',
+    deliveryProgress: '배송 진행',
+    deliveryPending: '아직 배송이 시작되지 않았습니다.',
+    orderInfo: '주문 정보',
+    courier: '배송 업체',
+    trackingNo: '운송장 번호',
   },
   jobCard: {
     title: 'Job Card 목록',
@@ -835,6 +845,10 @@ export const ko = {
     dealerOrders: {
       title: '내 주문',
       description: '부품 주문 내역 및 배송 상태를 확인하세요.',
+    },
+    dealerOrderDetail: {
+      title: '주문 상세',
+      description: '주문 품목 및 배송 진행 상태를 확인합니다.',
     },
     dealerJobCards: {
       title: 'Job Card 목록',

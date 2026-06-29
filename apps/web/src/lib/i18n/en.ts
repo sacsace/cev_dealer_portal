@@ -208,7 +208,17 @@ export const en = {
     track: 'Track',
     proformaInvoice: 'Proforma Invoice',
     downloadProforma: 'Download PDF',
+    empty: 'No orders yet.',
     emptyTab: 'No orders in this status.',
+    stageConfirmation: 'Order confirmed',
+    stagePreparing: 'Preparing shipment',
+    stageCompleted: 'Delivered',
+    detailSubtitle: 'Order details and delivery status',
+    deliveryProgress: 'Delivery progress',
+    deliveryPending: 'Delivery has not started yet.',
+    orderInfo: 'Order information',
+    courier: 'Courier',
+    trackingNo: 'Tracking No.',
   },
   jobCard: {
     title: 'Job Card List',
@@ -835,6 +845,10 @@ export const en = {
     dealerOrders: {
       title: 'My Orders',
       description: 'View your parts order history and shipment status.',
+    },
+    dealerOrderDetail: {
+      title: 'Order Detail',
+      description: 'View order line items and delivery progress.',
     },
     dealerJobCards: {
       title: 'Job Card List',

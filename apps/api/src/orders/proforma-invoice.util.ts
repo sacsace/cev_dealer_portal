@@ -41,8 +41,27 @@ function money(value: unknown) {
   return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export function buildProformaInvoiceNo(orderNo: string) {
-  return `PI-${orderNo}`;
+export function buildProformaInvoiceNo(orderNo: string, referenceDate: Date = new Date()) {
+  const year = String(referenceDate.getFullYear()).slice(-2);
+  const month = String(referenceDate.getMonth() + 1).padStart(2, '0');
+  const day = String(referenceDate.getDate()).padStart(2, '0');
+  const sequence = orderNo.replace(/\D/g, '').slice(-4).padStart(4, '0');
+  return `PI-${year}${month}${day}-${sequence}`;
+}
+
+export function isLegacyProformaInvoiceNo(invoiceNo: string) {
+  return invoiceNo.startsWith('PI-ORD-');
+}
+
+export function resolveProformaInvoiceNo(
+  orderNo: string,
+  createdAt: Date,
+  existingInvoiceNo?: string | null,
+) {
+  if (existingInvoiceNo && !isLegacyProformaInvoiceNo(existingInvoiceNo)) {
+    return existingInvoiceNo;
+  }
+  return buildProformaInvoiceNo(orderNo, createdAt);
 }
 
 type PdfContext = {
@@ -71,6 +90,44 @@ function ensureSpace(ctx: PdfContext, needed: number) {
 
 function setFill(doc: InstanceType<typeof PDFDocument>, color: string) {
   doc.fillColor(color);
+}
+
+function textHeight(
+  doc: InstanceType<typeof PDFDocument>,
+  text: string,
+  width: number,
+  options: { bold?: boolean; size?: number } = {},
+) {
+  doc.font(options.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(options.size ?? 9);
+  return doc.heightOfString(text || '—', { width });
+}
+
+function drawBoundedText(
+  doc: InstanceType<typeof PDFDocument>,
+  text: string,
+  x: number,
+  y: number,
+  width: number,
+  options: {
+    align?: 'left' | 'center' | 'right';
+    font?: string;
+    size?: number;
+    color?: string;
+    bold?: boolean;
+    singleLine?: boolean;
+  } = {},
+) {
+  const font = options.bold ? 'Helvetica-Bold' : options.font ?? 'Helvetica';
+  const size = options.size ?? 9;
+  setFill(doc, options.color ?? TEXT_PRIMARY);
+  doc.font(font).fontSize(size);
+  doc.text(text || '—', x, y, {
+    width,
+    align: options.align ?? 'left',
+    lineBreak: !options.singleLine,
+    ellipsis: options.singleLine,
+    height: options.singleLine ? size * 1.35 : undefined,
+  });
 }
 
 function drawRect(
@@ -123,17 +180,17 @@ function drawCellText(
     size?: number;
     color?: string;
     bold?: boolean;
+    singleLine?: boolean;
   } = {},
 ) {
   const padX = 8;
-  const font = options.bold ? 'Helvetica-Bold' : options.font ?? 'Helvetica';
-  const size = options.size ?? 9;
-  setFill(doc, options.color ?? TEXT_PRIMARY);
-  doc.font(font).fontSize(size);
-  doc.text(text, x + padX, y, {
-    width: width - padX * 2,
+  drawBoundedText(doc, text, x + padX, y, width - padX * 2, {
     align: options.align ?? 'left',
-    lineBreak: true,
+    font: options.font,
+    size: options.size ?? 9,
+    color: options.color ?? TEXT_PRIMARY,
+    bold: options.bold,
+    singleLine: options.singleLine ?? options.align !== 'left',
   });
 }
 
@@ -158,20 +215,24 @@ function drawCompanyHeader(ctx: PdfContext, company: ReturnType<typeof getCompan
 
   setFill(doc, '#ffffff');
   doc.font('Helvetica-Bold').fontSize(17);
-  doc.text(company.legalName, MARGIN + 18, top + 16, { width: CONTENT_WIDTH - 36, lineBreak: false });
+  drawBoundedText(doc, company.legalName, MARGIN + 18, top + 16, CONTENT_WIDTH - 36, { singleLine: true });
 
   doc.font('Helvetica').fontSize(8.5);
-  doc.text(`${company.addressLine1}, ${company.addressLine2}`, MARGIN + 18, top + 38, {
-    width: CONTENT_WIDTH - 36,
-    lineBreak: false,
-  });
+  drawBoundedText(
+    doc,
+    `${company.addressLine1}, ${company.addressLine2}`,
+    MARGIN + 18,
+    top + 38,
+    CONTENT_WIDTH - 36,
+  );
 
   doc.fontSize(8);
-  doc.text(
+  drawBoundedText(
+    doc,
     `GSTIN ${company.gstin}  ·  PAN ${company.pan}  ·  ${company.email}  ·  ${company.phone}`,
     MARGIN + 18,
     top + 54,
-    { width: CONTENT_WIDTH - 36, lineBreak: false },
+    CONTENT_WIDTH - 36,
   );
 
   setFill(doc, TEXT_PRIMARY);
@@ -194,21 +255,11 @@ function drawMetaAndBillTo(
   const boxTop = ctx.y;
   const leftWidth = Math.floor(CONTENT_WIDTH * 0.54);
   const rightWidth = CONTENT_WIDTH - leftWidth;
-  const boxHeight = 120;
-
-  drawRect(doc, MARGIN, boxTop, CONTENT_WIDTH, boxHeight, { stroke: BORDER_STRONG });
-  drawRect(doc, MARGIN, boxTop, CONTENT_WIDTH, 22, { fill: SURFACE });
-
-  drawSectionLabel(doc, 'Bill To', MARGIN + 14, boxTop + 7);
-  drawSectionLabel(doc, 'Document Details', MARGIN + leftWidth + 14, boxTop + 7);
-  drawVLine(doc, MARGIN + leftWidth, boxTop, boxTop + boxHeight, BORDER);
-
-  setFill(doc, TEXT_PRIMARY);
-  doc.font('Helvetica-Bold').fontSize(11);
-  doc.text(order.dealer.dealerName, MARGIN + 14, boxTop + 30, {
-    width: leftWidth - 28,
-    lineBreak: false,
-  });
+  const leftPad = 14;
+  const leftTextWidth = leftWidth - leftPad * 2;
+  const rightX = MARGIN + leftWidth + leftPad;
+  const metaLabelWidth = 88;
+  const metaValueWidth = rightWidth - leftPad - metaLabelWidth - 8;
 
   const billLines = [
     `Code: ${order.dealer.dealerCode}`,
@@ -219,21 +270,12 @@ function drawMetaAndBillTo(
     order.email ? `Order email: ${order.email}` : null,
   ].filter(Boolean) as string[];
 
-  let billY = boxTop + 46;
-  doc.font('Helvetica').fontSize(8.5);
-  setFill(doc, TEXT_SECONDARY);
-  for (const line of billLines) {
-    doc.text(line, MARGIN + 14, billY, { width: leftWidth - 28, lineBreak: false });
-    billY += 12;
-  }
-
   const dateStr = order.createdAt.toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   });
 
-  const rightX = MARGIN + leftWidth + 14;
   const metaRows: [string, string][] = [
     ['Proforma No', invoiceNo],
     ['Order No', order.orderNo],
@@ -241,27 +283,77 @@ function drawMetaAndBillTo(
     ['Supplier GSTIN', company.gstin],
   ];
 
+  const dealerNameHeight = textHeight(doc, order.dealer.dealerName, leftTextWidth, { bold: true, size: 11 });
+  const billLinesHeight = billLines.reduce(
+    (sum, line) => sum + textHeight(doc, line, leftTextWidth, { size: 8.5 }) + 2,
+    0,
+  );
+  const leftContentHeight = 30 + dealerNameHeight + 6 + billLinesHeight;
+
+  const metaRowsHeight = metaRows.reduce((sum, [label, value]) => {
+    const labelH = textHeight(doc, label, metaLabelWidth, { size: 8.5 });
+    const valueH = textHeight(doc, value, metaValueWidth, { bold: true, size: 8.5 });
+    return sum + Math.max(labelH, valueH) + 4;
+  }, 0);
+  const rightContentHeight = 30 + metaRowsHeight;
+
+  const boxHeight = Math.max(120, 22 + Math.max(leftContentHeight, rightContentHeight) + 12);
+
+  drawRect(doc, MARGIN, boxTop, CONTENT_WIDTH, boxHeight, { stroke: BORDER_STRONG });
+  drawRect(doc, MARGIN, boxTop, CONTENT_WIDTH, 22, { fill: SURFACE });
+
+  drawSectionLabel(doc, 'Bill To', MARGIN + leftPad, boxTop + 7);
+  drawSectionLabel(doc, 'Document Details', rightX, boxTop + 7);
+  drawVLine(doc, MARGIN + leftWidth, boxTop, boxTop + boxHeight, BORDER);
+
+  drawBoundedText(doc, order.dealer.dealerName, MARGIN + leftPad, boxTop + 30, leftTextWidth, {
+    bold: true,
+    size: 11,
+    singleLine: true,
+  });
+
+  let billY = boxTop + 30 + dealerNameHeight + 6;
+  for (const line of billLines) {
+    const lineHeight = textHeight(doc, line, leftTextWidth, { size: 8.5 });
+    drawBoundedText(doc, line, MARGIN + leftPad, billY, leftTextWidth, {
+      size: 8.5,
+      color: TEXT_SECONDARY,
+    });
+    billY += lineHeight + 2;
+  }
+
   let metaY = boxTop + 30;
   for (const [label, value] of metaRows) {
-    setFill(doc, TEXT_MUTED);
-    doc.font('Helvetica').fontSize(8.5);
-    doc.text(label, rightX, metaY, { width: 88, lineBreak: false });
-    setFill(doc, TEXT_PRIMARY);
-    doc.font('Helvetica-Bold').fontSize(8.5);
-    doc.text(value, rightX + 92, metaY, { width: rightWidth - 106, lineBreak: false });
-    metaY += 16;
+    drawBoundedText(doc, label, rightX, metaY, metaLabelWidth, {
+      size: 8.5,
+      color: TEXT_MUTED,
+      singleLine: true,
+    });
+    drawBoundedText(doc, value, rightX + metaLabelWidth + 8, metaY, metaValueWidth, {
+      bold: true,
+      size: 8.5,
+      align: 'right',
+    });
+    const rowHeight = Math.max(
+      textHeight(doc, label, metaLabelWidth, { size: 8.5 }),
+      textHeight(doc, value, metaValueWidth, { bold: true, size: 8.5 }),
+    );
+    metaY += rowHeight + 4;
   }
 
   ctx.y = boxTop + boxHeight + 14;
 
   if (order.shippingAddress) {
     const shipTop = ctx.y;
-    const shipHeight = 48;
+    const shipPad = 14;
+    const shipTextWidth = CONTENT_WIDTH - shipPad * 2;
+    const addressHeight = textHeight(doc, order.shippingAddress, shipTextWidth, { size: 8.5 });
+    const shipHeight = Math.max(48, 22 + addressHeight + 14);
     drawRect(doc, MARGIN, shipTop, CONTENT_WIDTH, shipHeight, { fill: SURFACE, stroke: BORDER });
-    drawSectionLabel(doc, 'Shipping Address', MARGIN + 14, shipTop + 8);
-    setFill(doc, TEXT_PRIMARY);
-    doc.font('Helvetica').fontSize(8.5);
-    doc.text(order.shippingAddress, MARGIN + 14, shipTop + 22, { width: CONTENT_WIDTH - 28 });
+    drawSectionLabel(doc, 'Shipping Address', MARGIN + shipPad, shipTop + 8);
+    drawBoundedText(doc, order.shippingAddress, MARGIN + shipPad, shipTop + 22, shipTextWidth, {
+      size: 8.5,
+    });
     ctx.y = shipTop + shipHeight + 14;
   }
 }
@@ -277,19 +369,22 @@ function drawTableHeaderRow(ctx: PdfContext, y: number) {
   doc.font('Helvetica-Bold').fontSize(7.5);
 
   TABLE_COLUMNS.forEach((col, i) => {
-    doc.text(col.label.toUpperCase(), colOffsets[i] + 8, y + 9, {
-      width: col.width - 16,
+    drawBoundedText(doc, col.label.toUpperCase(), colOffsets[i] + 8, y + 9, col.width - 16, {
       align: col.align,
-      lineBreak: false,
+      size: 7.5,
+      color: TEXT_MUTED,
+      bold: true,
+      singleLine: true,
     });
   });
 }
 
 function measureRowHeight(doc: InstanceType<typeof PDFDocument>, item: OrderItem) {
   doc.font('Helvetica').fontSize(9);
-  const nameCol = TABLE_COLUMNS[1];
-  const nameHeight = doc.heightOfString(item.partName, { width: nameCol.width - 16 });
-  return Math.max(TABLE_MIN_ROW_HEIGHT, Math.ceil(nameHeight) + 16);
+  const nameHeight = doc.heightOfString(item.partName, { width: TABLE_COLUMNS[1].width - 16 });
+  doc.fontSize(8.5);
+  const partNoHeight = doc.heightOfString(item.partNumber, { width: TABLE_COLUMNS[0].width - 16 });
+  return Math.max(TABLE_MIN_ROW_HEIGHT, Math.ceil(Math.max(nameHeight, partNoHeight)) + 16);
 }
 
 function drawTableRow(
@@ -327,6 +422,7 @@ function drawTableRow(
       bold: isTotal,
       color,
       size: col.key === 'partName' ? 9 : 8.5,
+      singleLine: col.key !== 'partName',
     });
   });
 
@@ -398,17 +494,21 @@ function drawTotals(ctx: PdfContext, order: OrderForProforma) {
     const isGrand = label === 'Grand Total';
     if (isGrand) {
       drawRect(doc, boxX + 1, lineY - 6, boxWidth - 2, 24, { fill: SURFACE_GREEN });
-      setFill(doc, BRAND_GREEN_DARK);
-      doc.font('Helvetica-Bold').fontSize(10);
-    } else {
-      setFill(doc, TEXT_SECONDARY);
-      doc.font('Helvetica').fontSize(9);
     }
 
-    doc.text(label, boxX + 14, lineY, { width: 100, lineBreak: false });
-    setFill(doc, isGrand ? BRAND_GREEN_DARK : TEXT_PRIMARY);
-    doc.font(isGrand ? 'Helvetica-Bold' : 'Helvetica').fontSize(isGrand ? 10 : 9);
-    doc.text(value, boxX + 120, lineY, { width: boxWidth - 134, align: 'right', lineBreak: false });
+    drawBoundedText(doc, label, boxX + 14, lineY, 100, {
+      size: isGrand ? 10 : 9,
+      color: isGrand ? BRAND_GREEN_DARK : TEXT_SECONDARY,
+      bold: isGrand,
+      singleLine: true,
+    });
+    drawBoundedText(doc, value, boxX + 120, lineY, boxWidth - 134, {
+      align: 'right',
+      size: isGrand ? 10 : 9,
+      color: isGrand ? BRAND_GREEN_DARK : TEXT_PRIMARY,
+      bold: isGrand,
+      singleLine: true,
+    });
     lineY += 20;
   }
 
@@ -417,15 +517,13 @@ function drawTotals(ctx: PdfContext, order: OrderForProforma) {
 
 function drawBankDetails(ctx: PdfContext, company: ReturnType<typeof getCompanyProfile>) {
   const { doc } = ctx;
-  const boxHeight = 118;
-  ensureSpace(ctx, boxHeight + 8);
-
-  const boxTop = ctx.y;
-  drawRect(doc, MARGIN, boxTop, CONTENT_WIDTH, boxHeight, { fill: SURFACE_GREEN, stroke: BORDER });
-  drawRect(doc, MARGIN, boxTop, CONTENT_WIDTH, 24, { fill: BRAND_GREEN });
-  setFill(doc, '#ffffff');
-  doc.font('Helvetica-Bold').fontSize(8.5);
-  doc.text('BANK DETAILS FOR PAYMENT', MARGIN + 14, boxTop + 8, { lineBreak: false });
+  const pad = 14;
+  const colSplit = MARGIN + CONTENT_WIDTH / 2;
+  const leftX = MARGIN + pad;
+  const rightX = colSplit + 8;
+  const labelWidth = 88;
+  const leftValueWidth = colSplit - leftX - labelWidth - 8;
+  const rightValueWidth = MARGIN + CONTENT_WIDTH - rightX - labelWidth - 8 - pad;
 
   const bankRows: [string, string][] = [
     ['Account Name', company.bankAccountName],
@@ -436,35 +534,60 @@ function drawBankDetails(ctx: PdfContext, company: ReturnType<typeof getCompanyP
     ['Account Type', company.bankAccountType || '—'],
   ];
 
-  const colSplit = MARGIN + CONTENT_WIDTH / 2;
+  const rowHeights = bankRows.map(([label, value], index) => {
+    const valueWidth = index % 2 === 0 ? leftValueWidth : rightValueWidth;
+    return Math.max(
+      textHeight(doc, label, labelWidth, { size: 8.5 }),
+      textHeight(doc, value, valueWidth, { bold: true, size: 8.5 }),
+    );
+  });
+
+  const leftRows = [0, 2, 4].map((i) => rowHeights[i] + 3);
+  const rightRows = [1, 3, 5].map((i) => rowHeights[i] + 3);
+  const gridHeight = Math.max(
+    leftRows.reduce((sum, h) => sum + h, 0),
+    rightRows.reduce((sum, h) => sum + h, 0),
+  );
+
+  const footerNote =
+    'Quote the Proforma Invoice No. in your payment reference when remitting funds.';
+  const footerHeight = textHeight(doc, footerNote, CONTENT_WIDTH - pad * 2, { size: 7.5 });
+  const boxHeight = 24 + gridHeight + footerHeight + 20;
+  ensureSpace(ctx, boxHeight + 8);
+
+  const boxTop = ctx.y;
+  drawRect(doc, MARGIN, boxTop, CONTENT_WIDTH, boxHeight, { fill: SURFACE_GREEN, stroke: BORDER });
+  drawRect(doc, MARGIN, boxTop, CONTENT_WIDTH, 24, { fill: BRAND_GREEN });
+  drawBoundedText(doc, 'BANK DETAILS FOR PAYMENT', MARGIN + pad, boxTop + 8, CONTENT_WIDTH - pad * 2, {
+    color: '#ffffff',
+    bold: true,
+    size: 8.5,
+    singleLine: true,
+  });
+
   let leftY = boxTop + 34;
   let rightY = boxTop + 34;
 
-  doc.font('Helvetica').fontSize(8.5);
   bankRows.forEach(([label, value], index) => {
     const isLeft = index % 2 === 0;
-    const x = isLeft ? MARGIN + 14 : colSplit + 8;
+    const x = isLeft ? leftX : rightX;
     const y = isLeft ? leftY : rightY;
+    const valueWidth = isLeft ? leftValueWidth : rightValueWidth;
 
-    setFill(doc, TEXT_MUTED);
-    doc.text(label, x, y, { width: 88, lineBreak: false });
-    setFill(doc, TEXT_PRIMARY);
-    doc.font('Helvetica-Bold').fontSize(8.5);
-    doc.text(value, x + 92, y, { width: 150, lineBreak: false });
-    doc.font('Helvetica');
+    drawBoundedText(doc, label, x, y, labelWidth, { size: 8.5, color: TEXT_MUTED, singleLine: true });
+    drawBoundedText(doc, value, x + labelWidth + 8, y, valueWidth, {
+      bold: true,
+      size: 8.5,
+    });
 
-    if (isLeft) leftY += 15;
-    else rightY += 15;
+    if (isLeft) leftY += rowHeights[index] + 3;
+    else rightY += rowHeights[index] + 3;
   });
 
-  setFill(doc, TEXT_MUTED);
-  doc.fontSize(7.5);
-  doc.text(
-    'Quote the Proforma Invoice No. in your payment reference when remitting funds.',
-    MARGIN + 14,
-    boxTop + boxHeight - 16,
-    { width: CONTENT_WIDTH - 28, lineBreak: false },
-  );
+  drawBoundedText(doc, footerNote, MARGIN + pad, boxTop + boxHeight - footerHeight - 8, CONTENT_WIDTH - pad * 2, {
+    size: 7.5,
+    color: TEXT_MUTED,
+  });
 
   ctx.y = boxTop + boxHeight + 18;
 }

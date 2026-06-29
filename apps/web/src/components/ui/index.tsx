@@ -2,6 +2,7 @@
 
 import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
+import { getDealerOrderStage } from '@/lib/dealer-order-stage';
 import { useI18n } from '@/components/providers/i18n-provider';
 import { PasswordInput } from './password-input';
 
@@ -312,6 +313,35 @@ export function DeliveryStatusBadge({ status }: { status: string }) {
   return (
     <span className={cn('status-badge', tones[key] ?? 'status-badge--neutral')}>
       {label}
+    </span>
+  );
+}
+
+export function DealerOrderStageBadge({
+  orderStatus,
+  deliveryStatus,
+}: {
+  orderStatus: string;
+  deliveryStatus?: string | null;
+}) {
+  const { t } = useI18n();
+  const stage = getDealerOrderStage(orderStatus, deliveryStatus);
+
+  const labels: Record<string, string> = {
+    CONFIRMATION: t('orders.stageConfirmation'),
+    PREPARING: t('orders.stagePreparing'),
+    COMPLETED: t('orders.stageCompleted'),
+  };
+
+  const tones: Record<string, string> = {
+    CONFIRMATION: 'status-badge--info',
+    PREPARING: 'status-badge--purple',
+    COMPLETED: 'status-badge--success',
+  };
+
+  return (
+    <span className={cn('status-badge', tones[stage] ?? 'status-badge--neutral')}>
+      {labels[stage]}
     </span>
   );
 }

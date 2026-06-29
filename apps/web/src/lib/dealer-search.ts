@@ -50,10 +50,6 @@ export function buildDealerSearchUrl(
 
   const params = new URLSearchParams();
 
-  if (scope === 'orders' && currentParams?.get('status')) {
-    params.set('status', currentParams.get('status')!);
-  }
-
   if (scope === 'parts' || scope === 'global') {
     if (currentParams?.get('modelId')) params.set('modelId', currentParams.get('modelId')!);
     if (currentParams?.get('categoryId')) params.set('categoryId', currentParams.get('categoryId')!);
@@ -64,9 +60,6 @@ export function buildDealerSearchUrl(
 }
 
 function resolveSearchBase(scope: DealerSearchScope, currentParams?: URLSearchParams): string {
-  if (scope === 'orders' && currentParams?.get('status')) {
-    return `/orders?status=${encodeURIComponent(currentParams.get('status')!)}`;
-  }
   if (scope === 'parts' && (currentParams?.get('modelId') || currentParams?.get('categoryId'))) {
     const params = new URLSearchParams();
     if (currentParams?.get('modelId')) params.set('modelId', currentParams.get('modelId')!);

@@ -8,6 +8,7 @@ import { CreateOrderDto, RejectOrderDto, ShipOrderDto, UpdateShipmentDto } from 
 import {
   buildProformaInvoiceNo,
   generateProformaInvoicePdf,
+  resolveProformaInvoiceNo,
   saveProformaInvoicePdf,
 } from './proforma-invoice.util';
 
@@ -60,7 +61,14 @@ export class OrdersService {
       this.prisma.order.count({ where }),
     ]);
 
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    const normalizedData = data.map((order) => {
+      if (!order.invoice) return order;
+      const invoiceNo = resolveProformaInvoiceNo(order.orderNo, order.createdAt, order.invoice.invoiceNo);
+      if (invoiceNo === order.invoice.invoiceNo) return order;
+      return { ...order, invoice: { ...order.invoice, invoiceNo } };
+    });
+
+    return { data: normalizedData, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
   async findOne(id: string, user: { role: UserRole; dealerId?: string }) {
@@ -77,6 +85,16 @@ export class OrdersService {
     if (!order) throw new NotFoundException('Order not found');
     if (user.role === UserRole.DEALER && order.dealerId !== user.dealerId) {
       throw new ForbiddenException('Access denied');
+    }
+
+    if (order.invoice) {
+      const invoiceNo = resolveProformaInvoiceNo(order.orderNo, order.createdAt, order.invoice.invoiceNo);
+      if (invoiceNo !== order.invoice.invoiceNo) {
+        order.invoice = await this.prisma.invoice.update({
+          where: { orderId: order.id },
+          data: { invoiceNo },
+        });
+      }
     }
 
     return order;
@@ -153,7 +171,7 @@ export class OrdersService {
     });
     if (!order) throw new NotFoundException('Order not found');
 
-    const invoiceNo = buildProformaInvoiceNo(order.orderNo);
+    const invoiceNo = buildProformaInvoiceNo(order.orderNo, order.createdAt);
     const pdfBuffer = await generateProformaInvoicePdf(order, invoiceNo);
     const { fileUrl } = await saveProformaInvoicePdf(orderId, pdfBuffer);
 
@@ -179,14 +197,14 @@ export class OrdersService {
     });
     if (!order) throw new NotFoundException('Order not found');
 
-    const invoiceNo = order.invoice?.invoiceNo ?? buildProformaInvoiceNo(order.orderNo);
+    const invoiceNo = resolveProformaInvoiceNo(order.orderNo, order.createdAt, order.invoice?.invoiceNo);
     const pdfBuffer = await generateProformaInvoicePdf(order, invoiceNo);
     const { fileUrl } = await saveProformaInvoicePdf(id, pdfBuffer);
 
     if (order.invoice) {
       await this.prisma.invoice.update({
         where: { orderId: id },
-        data: { invoiceUrl: fileUrl, invoiceAmount: order.grandTotal },
+        data: { invoiceUrl: fileUrl, invoiceAmount: order.grandTotal, invoiceNo },
       });
     } else {
       await this.prisma.invoice.create({

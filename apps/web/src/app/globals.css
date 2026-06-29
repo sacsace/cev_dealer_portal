@@ -833,13 +833,15 @@ a:focus:not(:focus-visible) {
   overflow-wrap: break-word;
 }
 
-.admin-nav-link:hover {
+.admin-nav-link:hover:not(.admin-nav-link--active) {
   background: rgba(0, 0, 0, 0.04);
 }
 
-.admin-nav-link--active {
+.admin-nav-link--active,
+.admin-nav-link--active:hover,
+.admin-nav-link--active:focus-visible {
   background: var(--text-primary);
-  color: #fff;
+  color: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
@@ -1507,6 +1509,49 @@ a:focus:not(:focus-visible) {
   letter-spacing: -0.01em;
 }
 
+.parts-filter-list-label {
+  margin-bottom: 0.5rem;
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.parts-filter-list {
+  display: flex;
+  max-height: 12.5rem;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  padding: 0.375rem;
+}
+
+.parts-filter-list__item {
+  width: 100%;
+  border-radius: calc(var(--radius-md) - 2px);
+  padding: 0.5625rem 0.75rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.parts-filter-list__item:hover:not(.parts-filter-list__item--active) {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.parts-filter-list__item--active,
+.parts-filter-list__item--active:hover,
+.parts-filter-list__item--active:focus-visible {
+  background: var(--text-primary);
+  color: #ffffff;
+}
+
 .parts-results-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -1568,19 +1613,57 @@ a:focus:not(:focus-visible) {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-secondary);
+  text-decoration: none;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.portal-status-tabs__btn:hover {
+.portal-status-tabs__btn:hover:not(.portal-status-tabs__btn--active) {
   color: var(--text-primary);
   border-color: color-mix(in srgb, var(--border) 70%, var(--text-primary));
 }
 
-.portal-status-tabs__btn--active {
+.portal-status-tabs__btn--active,
+.portal-status-tabs__btn--active:hover,
+.portal-status-tabs__btn--active:focus-visible {
   background: var(--text-primary);
   border-color: var(--text-primary);
-  color: var(--bg-primary);
+  color: #ffffff;
   box-shadow: var(--shadow-sm);
+}
+
+.delivery-progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.delivery-progress__step {
+  min-width: 5.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--bg-secondary);
+  padding: 0.4375rem 0.875rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+
+.delivery-progress__step--done {
+  border-color: color-mix(in srgb, var(--cev-green) 35%, var(--border));
+  background: color-mix(in srgb, var(--cev-green) 12%, white);
+  color: var(--cev-green);
+}
+
+.delivery-progress__step--active {
+  border-color: var(--cev-green);
+  background: var(--cev-green);
+  color: #ffffff;
+}
+
+.delivery-progress__arrow {
+  flex-shrink: 0;
 }
 
 .parts-grid {
